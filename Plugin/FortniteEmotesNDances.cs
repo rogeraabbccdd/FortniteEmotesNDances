@@ -17,13 +17,13 @@ using FortniteEmotes.API;
 
 namespace FortniteEmotes;
 
-[MinimumApiVersion(276)]
+[MinimumApiVersion(300)]
 public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 {
     public override string ModuleName => "Fortnite Emotes & Dances";
     public override string ModuleDescription => "CS2 Port of Fortnite Emotes & Dances";
     public override string ModuleAuthor => "Cruze";
-    public override string ModuleVersion => "1.0.5";
+    public override string ModuleVersion => "1.0.7";
 
     public required PluginConfig Config { get; set; } = new();
 
@@ -658,6 +658,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         resource.AddResource("models/chicken/chicken.vmdl"); // Needs precache in non-competitive maps
     }
 
+    [ConsoleCommand("css_et", "Displays all chat triggers for emotes/dance")]
     [ConsoleCommand("css_etrigger", "Displays all chat triggers for emotes/dance")]
     [ConsoleCommand("css_etriggers", "Displays all chat triggers for emotes/dance")]
     [ConsoleCommand("css_dtrigger", "Displays all chat triggers for emotes/dance")]

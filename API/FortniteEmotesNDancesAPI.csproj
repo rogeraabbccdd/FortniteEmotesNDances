@@ -12,6 +12,11 @@
     <OutputPath>$(PublishDir)</OutputPath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" Version="1.0.300" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
+  </ItemGroup>
+
   <Target Name="CleanUpAfterBuild" AfterTargets="Publish">
     <ItemGroup>
       <FilesToDelete Include="$(PublishDir)\**\*.dll" Exclude="$(PublishDir)\FortniteEmotesNDancesAPI.dll" />
@@ -21,9 +26,5 @@
     <Delete Files="@(FilesToDelete)" />
     <RemoveDir Directories="$(PublishDir)\runtimes" />
   </Target>
-
-  <ItemGroup>
-    <PackageReference Include="CounterStrikeSharp.API" Version="*" />
-  </ItemGroup>
   
 </Project>

@@ -61,7 +61,10 @@ public partial class Plugin
         {
             Server.NextWorldUpdate(() =>
             {
-                if(Config.EmoteMenuType == 2 && Menu.GetMenus(player) != null && Menu.GetMenus(player)?.Count > 0)
+                if(player == null || !player.IsValid)
+                    return;
+                
+                if(Config.EmoteMenuType == 2 && Menu != null && Menu.GetMenus(player) != null && Menu.GetMenus(player)!.Where(m => m.RequiresFreeze)?.Count() > 0)
                     SetPlayerMoveType(player, MoveType_t.MOVETYPE_OBSOLETE);
             });
         }
