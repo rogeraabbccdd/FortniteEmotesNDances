@@ -1,6 +1,6 @@
 # Fortnite Emotes & Dances
 
-This plugin allows players to use Emotes & Dances Fortnite.
+This plugin allows players to use Emotes & Dances just like Fortnite.
 
 **This took a *lot* of trial-and-error to find the best way to use thirdperson and a *lot* of effort create config file with each emote / dance. Sponsor if you would like to support me :)**
 
@@ -19,7 +19,7 @@ This plugin allows players to use Emotes & Dances Fortnite.
 
 ## Dependencies
 - [Metamod](https://www.metamodsource.net/downloads.php?branch=dev)
-- [CounterStrikeSharp v276+](https://github.com/roflmuffin/CounterStrikeSharp/releases/latest)
+- [CounterStrikeSharp v300+](https://github.com/roflmuffin/CounterStrikeSharp/releases/latest)
 - [MultiAddonManager](https://github.com/Source2ZE/MultiAddonManager/releases/latest)
 
 ## Installation
