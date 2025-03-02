@@ -319,6 +319,7 @@ public partial class Plugin
         }
 
         string model = player.PlayerPawn.Value?.CBodyComponent?.SceneNode?.GetSkeletonInstance().ModelState.ModelName ?? string.Empty;
+        ulong meshgroupmask = player.PlayerPawn.Value?.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.MeshGroupMask ?? 0;
 
         DebugLogs("Model: " + model);
 
@@ -335,7 +336,15 @@ public partial class Plugin
 
         clone.Entity.Name = propName+"_clone";
         clone.CBodyComponent!.SceneNode!.Owner!.Entity!.Flags &= unchecked((uint)~(1 << 2));
+
         clone.SetModel(model);
+        if (meshgroupmask != 0 && clone.CBodyComponent != null && clone.CBodyComponent.SceneNode != null)
+        {
+            clone.CBodyComponent.SceneNode.GetSkeletonInstance().ModelState.MeshGroupMask = meshgroupmask;
+            Utilities.SetStateChanged(clone, "CBaseEntity", "m_CBodyComponent");
+        }
+
+
         SetCollision(clone, CollisionGroup.COLLISION_GROUP_NEVER, SolidType_t.SOLID_NONE, 12);
         clone.DispatchSpawn();
         clone.Teleport(player.PlayerPawn.Value!.AbsOrigin, player.PlayerPawn.Value.AbsRotation, null);
@@ -815,10 +824,17 @@ public partial class Plugin
             return;
 
         var model = playerPawnValue.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.ModelName ?? string.Empty;
+        ulong meshgroupmask = playerPawnValue.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.MeshGroupMask ?? 0;
         if (!string.IsNullOrEmpty(model))
         {
             playerPawnValue.SetModel("characters/models/tm_jumpsuit/tm_jumpsuit_varianta.vmdl");
             playerPawnValue.SetModel(model);
+
+            if (meshgroupmask != 0 && playerPawnValue.CBodyComponent != null && playerPawnValue.CBodyComponent.SceneNode != null)
+            {
+                playerPawnValue.CBodyComponent.SceneNode.GetSkeletonInstance().ModelState.MeshGroupMask = meshgroupmask;
+                Utilities.SetStateChanged(playerPawnValue, "CBaseEntity", "m_CBodyComponent");
+            }
         }
 
         if(update)
