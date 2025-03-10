@@ -32,7 +32,7 @@ public partial class Plugin
         public CDynamicProp? CameraProp { get; set; } = null;
         public CDynamicProp? AnimProp { get; set; } = null;
         public uint CameraPropIndex { get; set; } = 0;
-        public int Cooldown { get; set; } = 0;
+        public float Cooldown { get; set; } = 0;
         public CSSTimer? Timer { get; set; } = null;
         public CSSTimer? DefaultAnimTimer { get; set; } = null;
         public CSSTimer? SoundTimer { get; set; } = null;
@@ -98,7 +98,7 @@ public partial class Plugin
                 break;
         }
         
-        if(!target.IsValidPlayer() || !target.PlayerPawn.IsValidPawnAlive() || target.ControllingBot || target.AbsOrigin == null || target.PlayerPawn.Value!.CameraServices == null)
+        if(!target.IsValidPlayer() || !target.PlayerPawn.IsValidPawnAlive() || target.ControllingBot || target.AbsOrigin == null || target.PlayerPawn.Value?.CameraServices == null)
         {
             error = $" {Localizer["emote.prefix"]} {Localizer[$"emote{(player == null ? "":".player")}.alivecheck"]}";
             return false;
@@ -119,7 +119,7 @@ public partial class Plugin
         
         if(g_PlayerSettings[steamID].Cooldown > time && player == null)
         {
-            error = $" {Localizer["emote.prefix"]} {Localizer["emote.cooldowncheck", g_PlayerSettings[steamID].Cooldown - time]}";
+            error = $" {Localizer["emote.prefix"]} {Localizer["emote.cooldowncheck", (int)g_PlayerSettings[steamID].Cooldown - time]}";
             return false;
         }
 
@@ -250,10 +250,7 @@ public partial class Plugin
         g_PlayerSettings[steamID].CameraProp = SetCam(target);
         g_PlayerSettings[steamID].CameraPropIndex = g_PlayerSettings[steamID].CameraProp?.Index ?? 0;
         
-        Server.RunOnTick(Server.TickCount + 4, () =>
-        {
-            g_PlayerSettings[steamID].IsDancing = true;
-        });
+        g_PlayerSettings[steamID].IsDancing = true;
 
         if(player == null)
         {
@@ -276,12 +273,16 @@ public partial class Plugin
                     break;
                 }
             }
-            
-            g_PlayerSettings[steamID].Cooldown = time + (hasVIP ? Config.EmoteVIPCooldown : Config.EmoteCooldown);
+            float cdTime = hasVIP ? Config.EmoteVIPCooldown : Config.EmoteCooldown;
+            if(cdTime <= 0)
+            {
+                cdTime = 0.1f;
+            }
+            g_PlayerSettings[steamID].Cooldown = time + cdTime;
         }
-        
+
         string emoteName = $"{Localizer[$"{emote.Name}"]}";
-        
+
         target.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.playing", emoteName]}");
 
         if(Config.SoundModuleEnabled)
@@ -300,7 +301,7 @@ public partial class Plugin
                             g_PlayerSettings[steamID].Reset();
                             return;
                         }
-                        
+
                         DebugLogs("SoundPlayed: " + emote.Sound);
                         EmitSound(target, emote.Sound, emote.SoundVolume);
                     }, TimerFlags.REPEAT|TimerFlags.STOP_ON_MAPCHANGE);
@@ -815,7 +816,7 @@ public partial class Plugin
     {
         if(!Config.EmoteGlovesFix)
             return;
-        
+
         if(!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive())
             return;
 
@@ -824,9 +825,10 @@ public partial class Plugin
             return;
 
         var model = playerPawnValue.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.ModelName ?? string.Empty;
-        ulong meshgroupmask = playerPawnValue.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.MeshGroupMask ?? 0;
+
         if (!string.IsNullOrEmpty(model))
         {
+            ulong meshgroupmask = playerPawnValue.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.MeshGroupMask ?? 0;
             playerPawnValue.SetModel("characters/models/tm_jumpsuit/tm_jumpsuit_varianta.vmdl");
             playerPawnValue.SetModel(model);
 
@@ -843,7 +845,7 @@ public partial class Plugin
             {
                 if(playerPawnValue == null)
                     return;
-                
+
                 SetBodygroup(playerPawnValue.Handle, "default_gloves", 1);
             });
         }

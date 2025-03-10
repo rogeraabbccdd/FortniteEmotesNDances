@@ -14,6 +14,7 @@ using CounterStrikeSharp.API.Modules.Entities.Constants;
 using CounterStrikeSharp.API.Modules.Timers;
 using Microsoft.Extensions.Logging;
 using FortniteEmotes.API;
+using CounterStrikeSharp.API.Modules.UserMessages;
 
 namespace FortniteEmotes;
 
@@ -23,7 +24,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     public override string ModuleName => "Fortnite Emotes & Dances";
     public override string ModuleDescription => "CS2 Port of Fortnite Emotes & Dances";
     public override string ModuleAuthor => "Cruze";
-    public override string ModuleVersion => "1.0.7-MeshgroupFix";
+    public override string ModuleVersion => "1.0.7-MeshgroupFix + SpamFix";
 
     public required PluginConfig Config { get; set; } = new();
 
@@ -401,8 +402,9 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         RegisterListener<Listeners.OnTick>(OnTick);
         RegisterListener<Listeners.OnServerPrecacheResources>(OnServerPrecacheResources);
 
-        AddCommandListener("say", OnSay, HookMode.Pre);
-        AddCommandListener("say_team", OnSay, HookMode.Pre);
+        // AddCommandListener("say", OnSay, HookMode.Pre);
+        // AddCommandListener("say_team", OnSay, HookMode.Pre);
+        HookUserMessage(118, OnMessage, HookMode.Pre);
         VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Hook(OnTakeDamage, HookMode.Pre);
 
         Menu_OnLoad();
@@ -433,8 +435,10 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         RemoveListener<Listeners.OnTick>(OnTick);
         RemoveListener<Listeners.OnServerPrecacheResources>(OnServerPrecacheResources);
 
-        RemoveCommandListener("say", OnSay, HookMode.Pre);
-        RemoveCommandListener("say_team", OnSay, HookMode.Pre);
+        // RemoveCommandListener("say", OnSay, HookMode.Pre);
+        // RemoveCommandListener("say_team", OnSay, HookMode.Pre);
+
+        UnhookUserMessage(118, OnMessage, HookMode.Pre);
         VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Unhook(OnTakeDamage, HookMode.Pre);
     }
 
@@ -453,7 +457,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         var pawn = victim.As<CCSPlayerPawn>();
 
         if (pawn == null || !pawn.IsValid) return HookResult.Continue;
-        
+
         if (pawn.OriginalController.Value is not { } victimController) return HookResult.Continue;
 
         if (victimController.IsBot || victimController.IsHLTV) return HookResult.Continue;
@@ -470,16 +474,44 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         return HookResult.Continue;
     }
 
+    public HookResult OnMessage(UserMessage um)
+    {
+        if (Utilities.GetPlayerFromIndex(um.ReadInt("entityindex")) is not CCSPlayerController player || player.IsBot)
+        {
+            return HookResult.Continue;
+        }
+
+        if(!Config.ChatTriggersEnabled || player == null)
+            return HookResult.Continue;
+
+        string message = um.ReadString("param2");
+
+        if(string.IsNullOrEmpty(message) || message.StartsWith("!") || message.StartsWith("/") || message.StartsWith("."))
+            return HookResult.Continue;
+
+        return OnPlayerSay(player, message);
+    }
+
+    /*
+    Not using this since RemoveCommandListener("say") doesn't actually remove listener and was causing issue when hot-reloading plugin
+    */
     public HookResult OnSay(CCSPlayerController? player, CommandInfo command)
     {
         if(!Config.ChatTriggersEnabled || player == null)
             return HookResult.Continue;
-            
+
         string message = command.GetArg(1);
 
         if(string.IsNullOrEmpty(message) || message.StartsWith("!") || message.StartsWith("/") || message.StartsWith("."))
             return HookResult.Continue;
 
+        OnPlayerSay(player, message);
+
+        return HookResult.Continue;
+    }
+
+    private HookResult OnPlayerSay(CCSPlayerController player, string message)
+    {
         foreach(var trigger in g_ChatTriggers)
         {
             if(trigger.Value.Any(message.Equals))
@@ -492,7 +524,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                         hasPerm = true;
                         break;
                     }
-                    
+
                     if(permission[0] == '@' && AdminManager.PlayerHasPermissions(player, permission))
                     {
                         hasPerm = true;
@@ -509,7 +541,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.no-access"]}");
                     return HookResult.Stop;
                 }
-                    
+
                 hasPerm = false;
                 foreach(var permission in trigger.Key.Permission)
                 {
@@ -518,7 +550,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                         hasPerm = true;
                         break;
                     }
-                    
+
                     if(permission[0] == '@' && AdminManager.PlayerHasPermissions(player, permission))
                     {
                         hasPerm = true;
@@ -536,7 +568,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.no-access"]}");
                     return HookResult.Stop;
                 }
-                
+
                 string error = "";
                 if(!PlayEmote(player, trigger.Key, ref error))
                 {
@@ -546,14 +578,13 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                 return HookResult.Stop;
             }
         }
-
         return HookResult.Continue;
     }
 
     public void OnMapStart(string map)
     {
         g_PlayerSettings = new();
-        
+
         g_GameRules = null;
 
         AddTimer(1.0f, () =>
