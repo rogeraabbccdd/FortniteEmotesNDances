@@ -5,26 +5,23 @@ using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Memory;
-using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
-using System.Text.Json;
 using CounterStrikeSharp.API.Modules.Cvars;
-using CounterStrikeSharp.API.Modules.Entities.Constants;
-using CounterStrikeSharp.API.Modules.Timers;
+using CounterStrikeSharp.API.Modules.UserMessages;
+using CounterStrikeSharp.API.Core.Translations;
 using Microsoft.Extensions.Logging;
 using FortniteEmotes.API;
-using CounterStrikeSharp.API.Modules.UserMessages;
 
 namespace FortniteEmotes;
 
-[MinimumApiVersion(300)]
+[MinimumApiVersion(309)]
 public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 {
     public override string ModuleName => "Fortnite Emotes & Dances";
     public override string ModuleDescription => "CS2 Port of Fortnite Emotes & Dances";
-    public override string ModuleAuthor => "Cruze";
-    public override string ModuleVersion => "1.0.7-MeshgroupFix + SpamFix";
+    public override string ModuleAuthor => "Cruze (https://github.com/cruze03)";
+    public override string ModuleVersion => "1.0.8";
 
     public required PluginConfig Config { get; set; } = new();
 
@@ -33,7 +30,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     private Dictionary<ulong, PlayerSettings> g_PlayerSettings = new();
 
     private Dictionary<Emote, List<string>> g_ChatTriggers = new();
-    
+
     private List<string> g_ListChatTriggers = new();
 
     private Dictionary<string, string> g_EmoteTransMap = new();
@@ -57,7 +54,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         g_ChatTriggers = new();
         g_ListChatTriggers = new();
         g_CancelButtons = new();
-        
+
         foreach(var emote in Config.EmoteDances)
         {
             if(!g_ChatTriggers.ContainsKey(emote))
@@ -72,41 +69,22 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             if(!g_EmoteTransMap.ContainsKey(emote.Name))
                 g_EmoteTransMap.Add(emote.Name, Localizer[emote.Name]);
         }
-        
+
         foreach(var emoteCommand in Config.EmoteCommand)
         {
             RegisterCommand(emoteCommand, "List all the available emotes", (CCSPlayerController? player, CommandInfo command) =>
             {
                 if(player == null)
                     return;
-                
-                bool bAccess = false;
-                foreach(var permission in Config.EmoteDanceCommandPerm)
-                {
-                    if(string.IsNullOrEmpty(permission))
-                    {
-                        bAccess = true;
-                        break;
-                    }
-                    
-                    if(permission[0] == '@' && AdminManager.PlayerHasPermissions(player, permission))
-                    {
-                        bAccess = true;
-                        break;
-                    }
-                    else if(permission[0] == '#' && AdminManager.PlayerInGroup(player, permission))
-                    {
-                        bAccess = true;
-                        break;
-                    }
-                }
+
+                bool bAccess = HasPermision(player, Config.EmoteDanceCommandPerm);
 
                 if(!bAccess)
                 {
-                    player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.command.no-permission"]}");
+                    player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.no-permission")}");
                     return;
                 }
-                
+
                 if(command.ArgCount == 1)
                 {
                     switch(Config.EmoteMenuType)
@@ -123,14 +101,14 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     }
                     return;
                 }
-                
+
                 string emote = command.GetArg(1);
 
                 var emoteObj = GetEmoteByName(emote, true, true);
 
                 if(emoteObj == null)
                 {
-                    player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.not-found"]}");
+                    player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.not-found")}");
                     return;
                 }
                 string error = "";
@@ -147,34 +125,15 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             {
                 if(player == null)
                     return;
-                
-                bool bAccess = false;
-                foreach(var permission in Config.EmoteDanceCommandPerm)
-                {
-                    if(string.IsNullOrEmpty(permission))
-                    {
-                        bAccess = true;
-                        break;
-                    }
-                    
-                    if(permission[0] == '@' && AdminManager.PlayerHasPermissions(player, permission))
-                    {
-                        bAccess = true;
-                        break;
-                    }
-                    else if(permission[0] == '#' && AdminManager.PlayerInGroup(player, permission))
-                    {
-                        bAccess = true;
-                        break;
-                    }
-                }
+
+                bool bAccess = HasPermision(player, Config.EmoteDanceCommandPerm);
 
                 if(!bAccess)
                 {
-                    player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.command.no-permission"]}");
+                    player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.no-permission")}");
                     return;
                 }
-                
+
                 if(command.ArgCount == 1)
                 {
                     switch(Config.EmoteMenuType)
@@ -191,14 +150,14 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     }
                     return;
                 }
-                
+
                 string dance = command.GetArg(1);
 
                 var danceObj = GetEmoteByName(dance, false, true);
 
                 if(danceObj == null)
                 {
-                    player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.not-found"]}");
+                    player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.not-found")}");
                     return;
                 }
 
@@ -217,36 +176,17 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             {
                 if(player != null)
                 {
-                    bool bAccess = false;
-                    foreach(var permission in Config.AdminSetEmoteDanceCommandPerm)
-                    {
-                        if(string.IsNullOrEmpty(permission))
-                        {
-                            bAccess = true;
-                            break;
-                        }
-                        
-                        if(permission[0] == '@' && AdminManager.PlayerHasPermissions(player, permission))
-                        {
-                            bAccess = true;
-                            break;
-                        }
-                        else if(permission[0] == '#' && AdminManager.PlayerInGroup(player, permission))
-                        {
-                            bAccess = true;
-                            break;
-                        }
-                    }
+                    bool bAccess = HasPermision(player, Config.AdminSetEmoteDanceCommandPerm);
                     if(!bAccess)
                     {
-                        player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.command.no-permission"]}");
+                        player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.no-permission")}");
                         return;
                     }
                 }
-                
+
                 if(command.ArgCount != 3)
                 {
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer["emote.setemote-usage", setemotecommand]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.setemote-usage", setemotecommand)}");
                     return;
                 }
 
@@ -256,21 +196,21 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
                 if(emoteObj == null)
                 {
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer["emote.not-found"]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.not-found")}");
                     return;
                 }
-                
+
                 var targets = GetTarget(command);
                 if (targets == null)
                 {
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer[$"emote.target-not-found"]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.target-not-found")}");
                     return;
                 }
-                
+
                 int count = 0;
                 var playersToTarget = targets.Players.Where(player =>
                 player.IsValidPlayer() && player.PlayerPawn.IsValidPawnAlive()).ToList();
-                
+
                 playersToTarget.ForEach(target =>
                 {
                     if (CanTarget(player, target))
@@ -281,9 +221,9 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     }
                 });
                 if(count > 0)
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer[$"emote.played-emote-on-target", count]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.played-emote-on-target", count)}");
                 else
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer[$"emote.failplayed-emote-on-target"]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.failplayed-emote-on-target")}");
             }, CommandUsage.CLIENT_AND_SERVER);
         }
 
@@ -293,36 +233,17 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             {
                 if(player != null)
                 {
-                    bool bAccess = false;
-                    foreach(var permission in Config.AdminSetEmoteDanceCommandPerm)
-                    {
-                        if(string.IsNullOrEmpty(permission))
-                        {
-                            bAccess = true;
-                            break;
-                        }
-                        
-                        if(permission[0] == '@' && AdminManager.PlayerHasPermissions(player, permission))
-                        {
-                            bAccess = true;
-                            break;
-                        }
-                        else if(permission[0] == '#' && AdminManager.PlayerInGroup(player, permission))
-                        {
-                            bAccess = true;
-                            break;
-                        }
-                    }
+                    bool bAccess = HasPermision(player, Config.AdminSetEmoteDanceCommandPerm);
                     if(!bAccess)
                     {
-                        player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.command.no-permission"]}");
+                        player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.no-permission")}");
                         return;
                     }
                 }
-                
+
                 if(command.ArgCount != 3)
                 {
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer["emote.setdance-usage", setdancecommand]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.setdance-usage", setdancecommand)}");
                     return;
                 }
 
@@ -332,21 +253,21 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
                 if(danceObj == null)
                 {
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer["emote.not-found"]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.not-found")}");
                     return;
                 }
-                
+
                 var targets = GetTarget(command);
                 if (targets == null)
                 {
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer[$"emote.target-not-found"]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.target-not-found")}");
                     return;
                 }
-                
+
                 int count = 0;
                 var playersToTarget = targets.Players.Where(player =>
                 player.IsValidPlayer() && player.PlayerPawn.IsValidPawnAlive()).ToList();
-                
+
                 playersToTarget.ForEach(target =>
                 {
                     if (CanTarget(player, target))
@@ -357,9 +278,9 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     }
                 });
                 if(count > 0)
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer[$"emote.played-dance-on-target", count]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.played-dance-on-target", count)}");
                 else
-                    command.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer[$"emote.failplayed-dance-on-target"]}");
+                    command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.failplayed-dance-on-target")}");
             }, CommandUsage.CLIENT_AND_SERVER);
         }
 
@@ -447,8 +368,8 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         if (g_GameRules == null) return HookResult.Continue;
 
         if (!Config.StopDamageWhenInEmote) return HookResult.Continue;
-        
-        var victim = h.GetParam<CEntityInstance>(0); 
+
+        var victim = h.GetParam<CEntityInstance>(0);
 
         if (victim == null || !victim.IsValid) return HookResult.Continue;
 
@@ -516,56 +437,18 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         {
             if(trigger.Value.Any(message.Equals))
             {
-                bool hasPerm = false;
-                foreach(var permission in Config.EmoteDanceCommandPerm)
-                {
-                    if(string.IsNullOrEmpty(permission))
-                    {
-                        hasPerm = true;
-                        break;
-                    }
-
-                    if(permission[0] == '@' && AdminManager.PlayerHasPermissions(player, permission))
-                    {
-                        hasPerm = true;
-                        break;
-                    }
-                    else if(permission[0] == '#' && AdminManager.PlayerInGroup(player, permission))
-                    {
-                        hasPerm = true;
-                        break;
-                    }
-                }
+                bool hasPerm = HasPermision(player, Config.EmoteDanceCommandPerm);
                 if(!hasPerm)
                 {
-                    player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.no-access"]}");
+                    player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.no-access")}");
                     return HookResult.Stop;
                 }
 
-                hasPerm = false;
-                foreach(var permission in trigger.Key.Permission)
-                {
-                    if(string.IsNullOrEmpty(permission))
-                    {
-                        hasPerm = true;
-                        break;
-                    }
-
-                    if(permission[0] == '@' && AdminManager.PlayerHasPermissions(player, permission))
-                    {
-                        hasPerm = true;
-                        break;
-                    }
-                    else if(permission[0] == '#' && AdminManager.PlayerInGroup(player, permission))
-                    {
-                        hasPerm = true;
-                        break;
-                    }
-                }
+                hasPerm = HasPermision(player, trigger.Key.Permission);
 
                 if(!hasPerm)
                 {
-                    player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.no-access"]}");
+                    player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.no-access")}");
                     return HookResult.Stop;
                 }
 
@@ -586,6 +469,8 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         g_PlayerSettings = new();
 
         g_GameRules = null;
+
+        EmitSoundExtension.ClearSounds();
 
         AddTimer(1.0f, () =>
         {
@@ -613,13 +498,13 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     continue;
                 }
                 */
-                
+
                 if(player.PlayerPawn.IsValidPawnAlive() && GetPlayerSpeed(player) > 350 && Config.EmoteFreezePlayer)
                 {
                     StopEmote(player);
                     continue;
                 }
-                
+
                 if(Config.EmoteMenuType != 2 || (Config.EmoteMenuType == 2 && (Menu.GetMenus(player) == null || Menu.GetMenus(player)?.Count <= 0)))
                 {
                     if (g_CancelButtons.Any(button => player.Buttons.ToString().Contains(button)))
@@ -673,9 +558,9 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             DebugLogs("Precaching sef: " + sefile);
             resource.AddResource(sefile);
         }
-        
+
         List<string> precachedModels = new();
-        
+
         foreach(var emote in Config.EmoteDances)
         {
             if(precachedModels.Contains(emote.Model))
@@ -698,11 +583,11 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     {
         if(player == null || !Config.ChatTriggersEnabled)
             return;
-        
-        player.PrintToChat($" {Localizer["emote.prefix"]} {Localizer["emote.list-chat-triggers"]}");
+
+        player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.list-chat-triggers")}");
 
         string batch = "";
-        
+
         int count = 0;
         foreach (var trigger in g_ListChatTriggers)
         {
@@ -711,7 +596,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                 player.PrintToChat($" {ChatColors.LightPurple}{batch},");
                 batch = "";
             }
-            
+
             if(string.IsNullOrEmpty(batch))
             {
                 batch = trigger;

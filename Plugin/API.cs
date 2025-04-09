@@ -21,7 +21,7 @@ public class FortniteEmotesApi : IFortniteEmotesAPI
     public Plugin plugin;
 
     public event IFortniteEmotesAPI.OnPlayerEmoteFunc? OnPlayerEmotePre;
-    
+
     public FortniteEmotesApi(Plugin plugin)
     {
         this.plugin = plugin;
@@ -29,21 +29,21 @@ public class FortniteEmotesApi : IFortniteEmotesAPI
 
     public HookResult InvokeOnPlayerEmote(CCSPlayerController player, Emote emote)
     {
-        if(OnPlayerEmotePre == null)
+        if (OnPlayerEmotePre == null)
             return HookResult.Continue;
-        
+
         return OnPlayerEmotePre.Invoke(player, emote);
     }
-    
+
     public bool PlayEmote(CCSPlayerController player, string emote, ref string error)
     {
         var emoteObj = plugin.GetEmoteByName(emote, true);
 
-        if(emoteObj == null)
+        if (emoteObj == null)
         {
             throw new Exception($"PlayEmote failed because emote name '{emote}' not found.");
         }
-        
+
         return plugin.PlayEmote(player, emoteObj, ref error, null);
     }
 
@@ -51,11 +51,11 @@ public class FortniteEmotesApi : IFortniteEmotesAPI
     {
         var danceObj = plugin.GetEmoteByName(dance, false);
 
-        if(danceObj == null)
+        if (danceObj == null)
         {
             throw new Exception($"PlayDance failed because dance name '{dance}' not found.");
         }
-        
+
         return plugin.PlayEmote(player, danceObj, ref error, null);
     }
 

@@ -1,5 +1,5 @@
 {
-    "emote.prefix": "[{green}İfadeler{default}]",
+    "emote.prefix": "[{green}CR-Emotes{default}]",
     "emote.command.help": "Beklenen Kullanım: {lime}!{0} {1}",
     "emote.command.no-permission": "{lightred}Bu komut için yetkiniz yok.",
     "emote.command.server-only": "{lightred}Bu komut yalnızca sunucu tarafından kullanılabilir.",

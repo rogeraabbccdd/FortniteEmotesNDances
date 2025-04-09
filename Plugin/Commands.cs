@@ -1,11 +1,12 @@
-using System.Collections.Concurrent;
-using System.Reflection;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Commands;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Commands.Targeting;
 using CounterStrikeSharp.API.Modules.Entities;
+using CounterStrikeSharp.API.Core.Translations;
+using System.Reflection;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 
 namespace FortniteEmotes;
@@ -84,14 +85,14 @@ public partial class Plugin
             case CommandUsage.CLIENT_ONLY:
                 if (player == null || !player.IsValid)
                 {
-                    info.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer["emote.command.client-only"]}");
+                    info.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.client-only")}");
                     return false;
                 }
                 break;
             case CommandUsage.SERVER_ONLY:
                 if (player != null)
                 {
-                    info.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer["emote.command.server-only"]}");
+                    info.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.server-only")}");
                     return false;
                 }
                 break;
@@ -101,7 +102,7 @@ public partial class Plugin
         {
             if (player != null && !AdminManager.PlayerHasPermissions(player, permission) && !AdminManager.PlayerHasCommandOverride(player, @info.GetArg(0)))
             {
-                info.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer["emote.command.no-permission"]}");
+                info.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.no-permission")}");
                 return false;
             }
         }
@@ -111,7 +112,7 @@ public partial class Plugin
             int checkArgCount = argCount + 1;
             if (info.ArgCount < checkArgCount)
             {
-                info.ReplyToCommand($" {Localizer["emote.prefix"]} {Localizer["emote.command.help", info.ArgByIndex(0), helpText]}");
+                info.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.help", info.ArgByIndex(0), helpText)}");
                 return false;
             }
         }

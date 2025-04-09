@@ -26,5 +26,4 @@
     <Delete Files="@(FilesToDelete)" />
     <RemoveDir Directories="$(PublishDir)\runtimes" />
   </Target>
-  
 </Project>

@@ -1,5 +1,5 @@
 {
-    "emote.prefix": "[{green}Fortnite{default}]",
+    "emote.prefix": "[{green}CR-Emotes{default}]",
     "emote.command.help": "预期用法: {lime}!{0} {1}",
     "emote.command.no-permission": "{lightred}你没有权限使用这个命令。",
     "emote.command.server-only": "{lightred}这个命令只能由服务器使用。",

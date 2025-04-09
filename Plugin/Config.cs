@@ -48,13 +48,13 @@ public partial class PluginConfig : BasePluginConfig
     public List<string> EmoteSoundEventFiles { get; set; } = new();
 
     [JsonPropertyName("EmoteDanceCommandPerm")]
-    public List<string> EmoteDanceCommandPerm { get; set; } = new(){""};
+    public List<string> EmoteDanceCommandPerm { get; set; } = new() { "" };
 
     [JsonPropertyName("AdminSetEmoteDanceCommandPerm")]
-    public List<string> AdminSetEmoteDanceCommandPerm { get; set; } = new() {"@css/root"};
+    public List<string> AdminSetEmoteDanceCommandPerm { get; set; } = new() { "@css/root" };
 
     [JsonPropertyName("VIPPerm")]
-    public List<string> VIPPerm { get; set; } = new() {"@css/vip"};
+    public List<string> VIPPerm { get; set; } = new() { "@css/vip" };
 
     [JsonPropertyName("SoundModuleEnabled")]
     public bool SoundModuleEnabled { get; set; } = true;
@@ -63,23 +63,23 @@ public partial class PluginConfig : BasePluginConfig
     public bool ChatTriggersEnabled { get; set; } = true;
 
     [JsonPropertyName("EmoteCommand")]
-    public List<string> EmoteCommand { get; set; } = new() {"emote","emotes"};
+    public List<string> EmoteCommand { get; set; } = new() { "emote", "emotes" };
 
     [JsonPropertyName("DanceCommand")]
-    public List<string> DanceCommand { get; set; } = new() {"dance","dances"};
+    public List<string> DanceCommand { get; set; } = new() { "dance", "dances" };
 
     [JsonPropertyName("AdminSetEmoteCommand")]
-    public List<string> AdminSetEmoteCommand { get; set; } = new() {"setemote","setemotes"};
+    public List<string> AdminSetEmoteCommand { get; set; } = new() { "setemote", "setemotes" };
 
     [JsonPropertyName("AdminSetDanceCommand")]
-    public List<string> AdminSetDanceCommand { get; set; } = new() {"setdance","setdances"};
+    public List<string> AdminSetDanceCommand { get; set; } = new() { "setdance", "setdances" };
 
     [JsonPropertyName("EmoteDances")]
     public List<Emote> EmoteDances { get; set; } = new List<Emote>();
 
     [JsonPropertyName("DebugLogs")]
     public bool DebugLogs { get; set; } = false;
-    
+
     [JsonPropertyName("ConfigVersion")]
-	public override int Version { get; set; } = 3;
+    public override int Version { get; set; } = 3;
 }

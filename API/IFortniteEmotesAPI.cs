@@ -1,6 +1,5 @@
 using System.Text.Json.Serialization;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Core.Attributes;
 
 namespace FortniteEmotes.API;
 
@@ -8,7 +7,7 @@ public class Emote
 {
     [JsonPropertyName("Name")]
     public string Name { get; set; } = "";
-    
+
     [JsonPropertyName("Model")]
     public string Model { get; set; } = "";
 
@@ -37,10 +36,10 @@ public class Emote
     public float SetToDefaultAnimationDuration { get; set; } = -1;
 
     [JsonPropertyName("Permission")]
-    public List<string> Permission { get; set; } = new(){""};
+    public List<string> Permission { get; set; } = new() { "" };
 
     [JsonPropertyName("Trigger")]
-    public List<string> Trigger { get; set; } = new() {"emote", "emotes"};
+    public List<string> Trigger { get; set; } = new() { "emote", "emotes" };
 }
 
 /// <summary>
@@ -48,7 +47,7 @@ public class Emote
 /// </summary>
 public interface IFortniteEmotesAPI
 {
-	delegate HookResult OnPlayerEmoteFunc(CCSPlayerController player, Emote emote);
+    delegate HookResult OnPlayerEmoteFunc(CCSPlayerController player, Emote emote);
 
     /// <summary>
     /// Is called when a player tries to play an emote/dance
@@ -56,28 +55,28 @@ public interface IFortniteEmotesAPI
     /// </summary>
     /// <param name="handler">Forward when emote/dance is about to be played</param>
     public event OnPlayerEmoteFunc? OnPlayerEmotePre;
-    
+
     /// <summary>
     /// if emote is unable to be played, will return false
     /// and error will have the reason.
     /// </summary>
     /// <param name="handler">Play emote for player</param>
     public bool PlayEmote(CCSPlayerController player, string name, ref string error);
-	
-	/// <summary>
+
+    /// <summary>
     /// if dance is unable to be played, will return false
     /// and error will have the reason.
     /// </summary>
     /// <param name="handler">Play dance for player</param>
     public bool PlayDance(CCSPlayerController player, string name, ref string error);
-	
-	/// <summary>
+
+    /// <summary>
     /// if not dancing, does nothing
     /// </summary>
     /// <param name="handler">Stops emote / dance for player</param>
     public void StopEmote(CCSPlayerController player);
-	
-	/// <summary>
+
+    /// <summary>
     /// returns true if player is in emote / dance
     /// </summary>
     /// <param name="handler">Dance status of player</param>
@@ -88,14 +87,14 @@ public interface IFortniteEmotesAPI
     /// </summary>
     /// <param name="handler">If player can dance</param>
     public bool IsReadyForDancing(CCSPlayerController player);
-	
-	/// <summary>
+
+    /// <summary>
     /// returns emote list
     /// </summary>
     /// <param name="handler">Get list of all emotes</param>
     public List<Emote> GetEmoteList();
-	
-	/// <summary>
+
+    /// <summary>
     /// returns dance list
     /// </summary>
     /// <param name="handler">Get list of all dances</param>

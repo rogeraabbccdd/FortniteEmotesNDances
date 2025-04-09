@@ -8,10 +8,11 @@ public partial class Plugin
     [GameEventHandler(HookMode.Pre)]
     public HookResult OnRoundPreStart(EventRoundPrestart @event, GameEventInfo @info)
     {
+        EmitSoundExtension.ClearSounds();
         g_bRoundEnd = false;
-        foreach(var player in g_PlayerSettings)
+        foreach (var player in g_PlayerSettings)
         {
-            if(player.Value.IsDancing)
+            if (player.Value.IsDancing)
             {
                 player.Value.Reset();
             }
@@ -29,16 +30,16 @@ public partial class Plugin
     [GameEventHandler]
     public HookResult OnRoundFreezeEnd(EventRoundFreezeEnd @event, GameEventInfo @info)
     {
-        if(!Config.StopEmoteAfterFreezetimeEnd)
+        if (!Config.StopEmoteAfterFreezetimeEnd)
             return HookResult.Continue;
-        
-        foreach(var settings in g_PlayerSettings)
+
+        foreach (var settings in g_PlayerSettings)
         {
-            if(settings.Value.IsDancing)
+            if (settings.Value.IsDancing)
             {
                 var player = Utilities.GetPlayerFromSteamId(settings.Key);
 
-                if(player != null)
+                if (player != null)
                 {
                     StopEmote(player);
                 }
@@ -52,35 +53,35 @@ public partial class Plugin
     {
         var player = @event.Userid;
 
-        if(player == null || !player.IsValid)
+        if (player == null || !player.IsValid)
             return HookResult.Continue;
-        
+
         StopEmote(player, true);
-        
-        if(Config.SmoothCamera)
+
+        if (Config.SmoothCamera)
         {
             Server.NextWorldUpdate(() =>
             {
-                if(player == null || !player.IsValid)
+                if (player == null || !player.IsValid)
                     return;
-                
-                if(Config.EmoteMenuType == 2 && Menu != null && Menu.GetMenus(player) != null && Menu.GetMenus(player)!.Where(m => m.RequiresFreeze)?.Count() > 0)
+
+                if (Config.EmoteMenuType == 2 && Menu != null && Menu.GetMenus(player) != null && Menu.GetMenus(player)!.Where(m => m.RequiresFreeze)?.Count() > 0)
                     SetPlayerMoveType(player, MoveType_t.MOVETYPE_OBSOLETE);
             });
         }
         return HookResult.Continue;
     }
-    
+
     [GameEventHandler]
     public HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo @info)
     {
         var player = @event.Userid;
 
-        if(player == null || !player.IsValid)
+        if (player == null || !player.IsValid)
             return HookResult.Continue;
-        
+
         var steamID = player.SteamID;
-        if(g_PlayerSettings.ContainsKey(steamID) && g_PlayerSettings[steamID].IsDancing)
+        if (g_PlayerSettings.ContainsKey(steamID) && g_PlayerSettings[steamID].IsDancing)
         {
             StopEmote(player);
         }
@@ -92,27 +93,14 @@ public partial class Plugin
     {
         var player = @event.Userid;
 
-        if(player == null || !player.IsValid)
+        if (player == null || !player.IsValid)
             return HookResult.Continue;
-        
+
         var steamID = player.SteamID;
-        if(g_PlayerSettings.ContainsKey(steamID) && g_PlayerSettings[steamID].IsDancing)
+        if (g_PlayerSettings.ContainsKey(steamID) && g_PlayerSettings[steamID].IsDancing)
         {
             StopEmote(player);
         }
-        return HookResult.Continue;
-    }
-
-    [GameEventHandler]
-    public HookResult OnPlayerConnectFull(EventPlayerConnectFull @event, GameEventInfo @info)
-    {
-        var player = @event.Userid;
-
-        if(player == null || !player.IsValid)
-            return HookResult.Continue;
-        
-        Transmit_OnPlayerConnectFull(player);
-        
         return HookResult.Continue;
     }
 }

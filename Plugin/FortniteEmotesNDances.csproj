@@ -27,29 +27,21 @@
     <CustomSourceFiles Include="$(CustomSourceDir)\**\*.*" />
   </ItemGroup>
 
- <ItemGroup>
-    <Reference Include="CounterStrikeSharp.API">
-       <HintPath>CounterStrikeSharp.API.dll</HintPath>
-	   <PrivateAssets>none</PrivateAssets>
-	   <ExcludeAssets>runtime</ExcludeAssets>
-       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </Reference>
-    
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" Version="*">
+      <PrivateAssets>none</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+      <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
+
     <Reference Include="KitsuneMenu">
       <HintPath>FortniteEmotesNDances/shared/KitsuneMenu/KitsuneMenu.dll</HintPath>
     </Reference>
-	<ProjectReference Include="..\API\FortniteEmotesNDancesAPI.csproj">
+    <ProjectReference Include="..\API\FortniteEmotesNDancesAPI.csproj">
       <Private>false</Private>
     </ProjectReference>
-</ItemGroup>
+    <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
-<ItemGroup>
-  <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
-</ItemGroup>
-
-<ItemGroup>
-  <PackageReference Include="CounterStrikeSharp.API" Version="1.0.300" />
-  <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
-</ItemGroup>
-  
 </Project>
