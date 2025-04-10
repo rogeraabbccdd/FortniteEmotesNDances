@@ -29,7 +29,7 @@ public partial class Plugin
         public CDynamicProp? CameraProp { get; set; } = null;
         public CDynamicProp? AnimProp { get; set; } = null;
         public uint CameraPropIndex { get; set; } = 0;
-        public float Cooldown { get; set; } = 0;
+        public DateTime Cooldown { get; set; } = DateTime.Now;
         public CSSTimer? Timer { get; set; } = null;
         public CSSTimer? DefaultAnimTimer { get; set; } = null;
         public CSSTimer? SoundTimer { get; set; } = null;
@@ -45,7 +45,7 @@ public partial class Plugin
             PlayerMoveType = MoveType_t.MOVETYPE_WALK;
             CameraProp = null;
             CameraPropIndex = 0;
-            Cooldown = 0;
+            Cooldown = DateTime.Now;
             Timer = null;
             DefaultAnimTimer = null;
             SoundTimer = null;
@@ -112,11 +112,13 @@ public partial class Plugin
         if (!g_PlayerSettings.ContainsKey(steamID))
             g_PlayerSettings[steamID] = new PlayerSettings();
 
-        int time = GetTime();
+        var now = DateTime.Now;
 
-        if (g_PlayerSettings[steamID].Cooldown > time && player == null)
+        DebugLogs($"{target.PlayerName} cd: {g_PlayerSettings[steamID].Cooldown} > {now}");
+
+        if (g_PlayerSettings[steamID].Cooldown > now && player == null)
         {
-            error = $" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.cooldowncheck", (int)g_PlayerSettings[steamID].Cooldown - time)}";
+            error = $" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.cooldowncheck", (int)(g_PlayerSettings[steamID].Cooldown - now).TotalSeconds)}";
             return false;
         }
 
@@ -257,7 +259,8 @@ public partial class Plugin
             {
                 cdTime = 0.1f;
             }
-            g_PlayerSettings[steamID].Cooldown = time + cdTime;
+            g_PlayerSettings[steamID].Cooldown = now.AddSeconds(cdTime);
+            DebugLogs($"{target.PlayerName} added cd: {cdTime}s");
         }
 
         string emoteName = $"{Localizer.ForPlayer(target, $"{emote.Name}")}";
@@ -581,11 +584,6 @@ public partial class Plugin
         g_PlayerSettings[steamID].EmoteModelIndex = 0;
         g_PlayerSettings[steamID].CloneModelIndex = 0;
         g_PlayerSettings[steamID].CameraPropIndex = 0;
-    }
-
-    private int GetTime()
-    {
-        return (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     }
 
     private int GetPlayerSpeed(CCSPlayerController player)
