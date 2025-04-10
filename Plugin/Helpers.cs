@@ -11,6 +11,7 @@ using CounterStrikeSharp.API.Modules.UserMessages;
 using CounterStrikeSharp.API.Core.Translations;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using FortniteEmotes.API;
 
 namespace FortniteEmotes;
@@ -929,6 +930,14 @@ public partial class Plugin
     {
         if (Config.DebugLogs)
             Logger.LogInformation(message);
+    }
+
+    private bool IsCS2FixesInstalled()
+    {
+        string vdfPath = Path.Combine(Server.GameDirectory, "csgo", "addons/metamod", "cs2fixes.vdf");
+        string binaryPath = Path.Combine(Server.GameDirectory, "csgo", "addons/cs2fixes/bin", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win64/cs2fixes.dll" : "linuxsteamrt64/cs2fixes.so");
+
+        return File.Exists(vdfPath) && File.Exists(binaryPath);
     }
 }
 

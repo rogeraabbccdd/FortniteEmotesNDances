@@ -313,6 +313,12 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             else if(button.Equals("inspect", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add("34359738368");
         }
+
+        if(Config.StopDamageWhenInEmote && IsCS2FixesInstalled())
+        {
+            Config.StopDamageWhenInEmote = false;
+            Logger.LogWarning("CS2Fixes DETECTED. Setting value of 'StopDamageWhenInEmote' as false.");
+        }
     }
 
     public override void Load(bool hotReload)
@@ -325,7 +331,9 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         // AddCommandListener("say", OnSay, HookMode.Pre);
         // AddCommandListener("say_team", OnSay, HookMode.Pre);
         HookUserMessage(118, OnMessage, HookMode.Pre);
-        VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Hook(OnTakeDamage, HookMode.Pre);
+
+        if (Config.StopDamageWhenInEmote)
+            VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Hook(OnTakeDamage, HookMode.Pre);
 
         Menu_OnLoad();
         API_OnLoad();
@@ -359,14 +367,14 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         // RemoveCommandListener("say_team", OnSay, HookMode.Pre);
 
         UnhookUserMessage(118, OnMessage, HookMode.Pre);
-        VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Unhook(OnTakeDamage, HookMode.Pre);
+
+        if (Config.StopDamageWhenInEmote)
+            VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Unhook(OnTakeDamage, HookMode.Pre);
     }
 
     private HookResult OnTakeDamage(DynamicHook h)
     {
         if (g_GameRules == null) return HookResult.Continue;
-
-        if (!Config.StopDamageWhenInEmote) return HookResult.Continue;
 
         var victim = h.GetParam<CEntityInstance>(0);
 
