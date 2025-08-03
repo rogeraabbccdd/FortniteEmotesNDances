@@ -10,6 +10,7 @@
 		"offsets": {
 			"windows": 190,
 			"linux": 189
+		}
 	},
 	"StateTransition": {
 		"signatures": {
