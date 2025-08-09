@@ -17,10 +17,6 @@ using FortniteEmotes.API;
 namespace FortniteEmotes;
 public partial class Plugin
 {
-    private static readonly MemoryFunctionWithReturn<nint, string, int, int> SetBodygroupFunc = new(GameData.GetSignature("CBaseModelEntity_SetBodygroup"));
-
-    private static readonly Func<nint, string, int, int> SetBodygroup = SetBodygroupFunc.Invoke;
-
     public class PlayerSettings
     {
         public uint CloneModelIndex { get; set; } = 0;
@@ -839,9 +835,14 @@ public partial class Plugin
                 if (playerPawnValue == null)
                     return;
 
-                SetBodygroup(playerPawnValue.Handle, "default_gloves", 2);
+                SetBodygroup(playerPawnValue, "default_gloves", 2);
             });
         }
+    }
+
+    private void SetBodygroup(CCSPlayerPawn pawn, string group, int value)
+    {
+        pawn.AcceptInput("SetBodygroup", value: $"{group},{value}");
     }
 
     public static void UpdateCamera(CDynamicProp cameraProp, CCSPlayerController target)
