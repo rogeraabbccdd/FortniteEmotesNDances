@@ -20,7 +20,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     public override string ModuleName => "Fortnite Emotes & Dances";
     public override string ModuleDescription => "CS2 Port of Fortnite Emotes & Dances";
     public override string ModuleAuthor => "Cruze (https://github.com/cruze03)";
-    public override string ModuleVersion => "1.0.9";
+    public override string ModuleVersion => "1.1.0";
 
     public required PluginConfig Config { get; set; } = new();
 
@@ -337,7 +337,6 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
         Menu_OnLoad();
         API_OnLoad();
-        Transmit_OnLoad();
 
         EmotesEnable.ValueChanged += (sender, value) =>
         {
@@ -357,7 +356,6 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         StopAllEmotes();
 
         RemoveAllCommands();
-        Transmit_OnUnload();
 
         RemoveListener<Listeners.OnMapStart>(OnMapStart);
         RemoveListener<Listeners.OnTick>(OnTick);
