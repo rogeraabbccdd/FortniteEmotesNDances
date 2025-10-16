@@ -14,13 +14,13 @@ using FortniteEmotes.API;
 
 namespace FortniteEmotes;
 
-[MinimumApiVersion(309)]
+[MinimumApiVersion(329)]
 public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 {
     public override string ModuleName => "Fortnite Emotes & Dances";
     public override string ModuleDescription => "CS2 Port of Fortnite Emotes & Dances";
     public override string ModuleAuthor => "Cruze (https://github.com/cruze03)";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.1.1";
 
     public required PluginConfig Config { get; set; } = new();
 
@@ -309,9 +309,9 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             else if(button.Equals("crouch", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Duck.ToString());
             else if(button.Equals("scoreboard", StringComparison.CurrentCultureIgnoreCase) && Config.EmoteMenuType != 2)
-                g_CancelButtons.Add("8589934592");
+                g_CancelButtons.Add(PlayerButtons.Scoreboard.ToString());
             else if(button.Equals("inspect", StringComparison.CurrentCultureIgnoreCase))
-                g_CancelButtons.Add("34359738368");
+                g_CancelButtons.Add(PlayerButtons.Inspect.ToString());
         }
 
         if(Config.StopDamageWhenInEmote && IsCS2FixesInstalled())
@@ -327,6 +327,8 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         RegisterListener<Listeners.OnMapStart>(OnMapStart);
         RegisterListener<Listeners.OnTick>(OnTick);
         RegisterListener<Listeners.OnServerPrecacheResources>(OnServerPrecacheResources);
+
+        Transmit_OnLoad();
 
         // AddCommandListener("say", OnSay, HookMode.Pre);
         // AddCommandListener("say_team", OnSay, HookMode.Pre);
@@ -352,6 +354,8 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     public override void Unload(bool hotReload)
     {
         base.Unload(hotReload);
+
+        Transmit_OnUnload();
 
         StopAllEmotes();
 

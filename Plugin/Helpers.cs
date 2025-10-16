@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using FortniteEmotes.API;
 
 namespace FortniteEmotes;
+
 public partial class Plugin
 {
     public class PlayerSettings
@@ -617,7 +618,7 @@ public partial class Plugin
         if (prop == null)
             return null;
 
-        prop.Teleport(CalculatePositionInFront(player, -110, 75), player.PlayerPawn.Value.V_angle, new Vector());
+        prop.Teleport(CalculatePositionInFront(player, -110, 75), player.PlayerPawn.Value.V_angle);
 
         prop.Entity!.Name = "cameraProp_" + new Random().Next(1000000, 9999999).ToString();
         prop.CBodyComponent!.SceneNode!.Owner!.Entity!.Flags &= unchecked((uint)~(1 << 2));
@@ -627,7 +628,7 @@ public partial class Plugin
         SetPropInvisible(prop);
 
         prop.DispatchSpawn();
-        prop.Teleport(player.PlayerPawn.Value.AbsOrigin, player.PlayerPawn.Value.V_angle, new Vector());
+        prop.Teleport(player.PlayerPawn.Value.AbsOrigin, player.PlayerPawn.Value.V_angle);
 
         SetCollision(prop, CollisionGroup.COLLISION_GROUP_NEVER, SolidType_t.SOLID_VPHYSICS, 12);
 
@@ -851,7 +852,7 @@ public partial class Plugin
         {
             Vector positionBehind = CalculatePositionInFront(target, -110, 75f); //130 90
             Vector position = Lerp(GetPosition(cameraProp), positionBehind, 0.1f);
-            cameraProp.Teleport(position, target.PlayerPawn.Value!.V_angle, new Vector());
+            cameraProp.Teleport(position, target.PlayerPawn.Value!.V_angle);
 
             // Vector velocity = CalculateVelocity(cameraProp.AbsOrigin!, CalculatePositionInFront(target, -110, 75), 0.01f);
             // cameraProp.Teleport(null, target.PlayerPawn.Value!.V_angle, velocity);
@@ -860,9 +861,9 @@ public partial class Plugin
 
     public static void UpdateAnimProp(CDynamicProp animProp, CCSPlayerController target)
     {
-        if (target.IsValidPlayer() && target.PlayerPawn.IsValidPawnAlive() && target.AbsOrigin != null)
+        if (target.IsValidPlayer() && target.PlayerPawn.IsValidPawnAlive() && target.PlayerPawn.Value!.AbsOrigin != null)
         {
-            animProp.Teleport(target.PlayerPawn.Value!.AbsOrigin, target.PlayerPawn.Value.AbsRotation, new Vector());
+            animProp.Teleport(target.PlayerPawn.Value.AbsOrigin, target.PlayerPawn.Value.AbsRotation);
         }
     }
 
