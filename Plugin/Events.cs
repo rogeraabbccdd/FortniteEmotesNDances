@@ -3,12 +3,14 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 
 namespace FortniteEmotes;
+
 public partial class Plugin
 {
     [GameEventHandler(HookMode.Pre)]
     public HookResult OnRoundPreStart(EventRoundPrestart @event, GameEventInfo @info)
     {
         EmitSoundExtension.ClearSounds();
+        playerWeapons.Clear();
         g_bRoundEnd = false;
         foreach (var player in g_PlayerSettings)
         {

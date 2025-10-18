@@ -197,7 +197,9 @@ public partial class Plugin
             target.PlayerPawn.Value.AcceptInput("FollowEntity", target.PlayerPawn.Value, target.PlayerPawn.Value, propName);
         }
 
-        SetPlayerWeaponInvisible(target);
+        // SetPlayerWeaponInvisible(target);
+
+        ClearPlayerWeapons(target);
 
         RefreshPlayerGloves(target);
 
@@ -536,7 +538,9 @@ public partial class Plugin
 
         ResetCam(player);
 
-        SetPlayerWeaponVisible(player);
+        // SetPlayerWeaponVisible(player);
+
+        GivePlayerWeaponsBack(player);
 
         if (!Config.SmoothCamera)
         {
@@ -740,6 +744,138 @@ public partial class Plugin
         Utilities.SetStateChanged(player.PlayerPawn.Value, "CBaseEntity", "m_MoveType");
     }
 
+    public string GetWeaponClassname(CBasePlayerWeapon weapon)
+    {
+        string classname;
+        int defIndex = weapon.AttributeManager.Item.ItemDefinitionIndex;
+
+        switch (defIndex)
+        {
+            case 23:
+                {
+                    classname = "weapon_mp5sd";
+                    break;
+                }
+            case 41:
+                {
+                    classname = "weapon_knifegg";
+                    break;
+                }
+            case 42:
+                {
+                    classname = "weapon_knife";
+                    break;
+                }
+            case 59:
+                {
+                    classname = "weapon_knife_t";
+                    break;
+                }
+            case 60:
+                {
+                    classname = "weapon_m4a1_silencer";
+                    break;
+                }
+            case 61:
+                {
+                    classname = "weapon_usp_silencer";
+                    break;
+                }
+            case 63:
+                {
+                    classname = "weapon_cz75a";
+                    break;
+                }
+            case 64:
+                {
+                    classname = "weapon_revolver";
+                    break;
+                }
+            default:
+                {
+                    classname = weapon.DesignerName;
+                    break;
+                }
+        }
+        return classname;
+    }
+
+    private void ClearPlayerWeapons(CCSPlayerController player)
+    {
+        if (!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive())
+            return;
+
+        var playerPawnValue = player.PlayerPawn.Value;
+
+        Dictionary<string, List<(int, int)>> weaponsWithAmmo = [];
+
+        var myWeapons = playerPawnValue!.WeaponServices?.MyWeapons;
+        if (myWeapons != null)
+        {
+            foreach (var gun in myWeapons)
+            {
+                var weapon = gun.Value;
+                if (weapon != null)
+                {
+                    int clip1 = weapon.Clip1;
+                    int reservedAmmo = weapon.ReserveAmmo[0];
+
+                    var weaponName = GetWeaponClassname(weapon);
+
+                    if (!weaponsWithAmmo.TryGetValue(weaponName, out var value))
+                    {
+                        value = [];
+                        weaponsWithAmmo.Add(weaponName, value);
+                    }
+
+                    value.Add((clip1, reservedAmmo));
+                    weapon?.AddEntityIOEvent("Kill", weapon, null, "", 0.1f);
+                }
+            }
+            playerWeapons[player.Slot] = weaponsWithAmmo;
+        }
+    }
+
+    private void GivePlayerWeaponsBack(CCSPlayerController player)
+    {
+        if (!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive())
+            return;
+
+        var playerPawnValue = player.PlayerPawn.Value;
+
+        if (playerWeapons.TryGetValue(player.Slot, out var weaponsWithAmmo))
+        {
+            foreach (var weapon in weaponsWithAmmo)
+            {
+                foreach (var ammo in weapon.Value)
+                {
+                    try
+                    {
+                        var newWeapon = new CBasePlayerWeapon(player.GiveNamedItem(weapon.Key));
+                        if (newWeapon == null) continue;
+                        Server.NextWorldUpdate(() =>
+                        {
+                            try
+                            {
+                                newWeapon.Clip1 = ammo.Item1;
+                                newWeapon.ReserveAmmo[0] = ammo.Item2;
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.LogWarning("Error setting weapon properties: " + ex.Message);
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogWarning("Error giving weapon: " + ex.Message);
+                    }
+                }
+            }
+        }
+        playerWeapons.Remove(player.Slot);
+    }
+
     private static void SetPlayerWeaponVisible(CCSPlayerController player)
     {
         if (!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive())
@@ -771,6 +907,7 @@ public partial class Plugin
         }
     }
 
+    // Stopped working after 15/10/2025 patch
     private static void SetPlayerWeaponInvisible(CCSPlayerController player)
     {
         if (!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive())

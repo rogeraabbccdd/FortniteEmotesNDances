@@ -38,6 +38,8 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
     private CCSGameRules? g_GameRules = null;
 
+    private Dictionary<int, Dictionary<string, List<(int, int)>>> playerWeapons = [];
+
     public FakeConVar<bool> EmotesEnable = new("css_fortnite_emotes_enable", "ConVar to toggle emotes and dances", true);
 
     public void OnConfigParsed(PluginConfig config)
@@ -49,14 +51,19 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
         Config = config;
 
+        // TODO: Fix these
+        Config.SmoothCamera = true;
+        Config.FixedCamera = false;
+        Config.EmoteFreezePlayer = true;
+
         g_EmoteTransMap = new();
         g_ChatTriggers = new();
         g_ListChatTriggers = new();
         g_CancelButtons = new();
 
-        foreach(var emote in Config.EmoteDances)
+        foreach (var emote in Config.EmoteDances)
         {
-            if(!g_ChatTriggers.ContainsKey(emote))
+            if (!g_ChatTriggers.ContainsKey(emote))
                 g_ChatTriggers.Add(emote, emote.Trigger);
             foreach (var trigger in emote.Trigger)
             {
@@ -65,28 +72,28 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     g_ListChatTriggers.Add(trigger);
                 }
             }
-            if(!g_EmoteTransMap.ContainsKey(emote.Name))
+            if (!g_EmoteTransMap.ContainsKey(emote.Name))
                 g_EmoteTransMap.Add(emote.Name, Localizer[emote.Name]);
         }
 
-        foreach(var emoteCommand in Config.EmoteCommand)
+        foreach (var emoteCommand in Config.EmoteCommand)
         {
             RegisterCommand(emoteCommand, "List all the available emotes", (CCSPlayerController? player, CommandInfo command) =>
             {
-                if(player == null)
+                if (player == null)
                     return;
 
                 bool bAccess = HasPermision(player, Config.EmoteDanceCommandPerm);
 
-                if(!bAccess)
+                if (!bAccess)
                 {
                     player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.no-permission")}");
                     return;
                 }
 
-                if(command.ArgCount == 1)
+                if (command.ArgCount == 1)
                 {
-                    switch(Config.EmoteMenuType)
+                    switch (Config.EmoteMenuType)
                     {
                         case 0:
                             ShowChatMenu(player, false);
@@ -105,37 +112,37 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
                 var emoteObj = GetEmoteByName(emote, true, true);
 
-                if(emoteObj == null)
+                if (emoteObj == null)
                 {
                     player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.not-found")}");
                     return;
                 }
                 string error = "";
-                if(!PlayEmote(player, emoteObj, ref error))
+                if (!PlayEmote(player, emoteObj, ref error))
                 {
                     player.PrintToChat(error);
                 }
             }, CommandUsage.CLIENT_ONLY);
         }
 
-        foreach(var danceCommand in Config.DanceCommand)
+        foreach (var danceCommand in Config.DanceCommand)
         {
             RegisterCommand(danceCommand, "List all the available dances", (CCSPlayerController? player, CommandInfo command) =>
             {
-                if(player == null)
+                if (player == null)
                     return;
 
                 bool bAccess = HasPermision(player, Config.EmoteDanceCommandPerm);
 
-                if(!bAccess)
+                if (!bAccess)
                 {
                     player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.no-permission")}");
                     return;
                 }
 
-                if(command.ArgCount == 1)
+                if (command.ArgCount == 1)
                 {
-                    switch(Config.EmoteMenuType)
+                    switch (Config.EmoteMenuType)
                     {
                         case 0:
                             ShowChatMenu(player, true);
@@ -154,36 +161,36 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
                 var danceObj = GetEmoteByName(dance, false, true);
 
-                if(danceObj == null)
+                if (danceObj == null)
                 {
                     player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.not-found")}");
                     return;
                 }
 
                 string error = "";
-                if(!PlayEmote(player, danceObj, ref error))
+                if (!PlayEmote(player, danceObj, ref error))
                 {
-                    if(!string.IsNullOrEmpty(error))
+                    if (!string.IsNullOrEmpty(error))
                         player.PrintToChat(error);
                 }
             }, CommandUsage.CLIENT_ONLY);
         }
 
-        foreach(var setemotecommand in Config.AdminSetEmoteCommand)
+        foreach (var setemotecommand in Config.AdminSetEmoteCommand)
         {
             RegisterCommand(setemotecommand, "Set emote to player", (CCSPlayerController? player, CommandInfo command) =>
             {
-                if(player != null)
+                if (player != null)
                 {
                     bool bAccess = HasPermision(player, Config.AdminSetEmoteDanceCommandPerm);
-                    if(!bAccess)
+                    if (!bAccess)
                     {
                         player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.no-permission")}");
                         return;
                     }
                 }
 
-                if(command.ArgCount != 3)
+                if (command.ArgCount != 3)
                 {
                     command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.setemote-usage", setemotecommand)}");
                     return;
@@ -193,7 +200,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
                 var emoteObj = GetEmoteByName(dance, true, true);
 
-                if(emoteObj == null)
+                if (emoteObj == null)
                 {
                     command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.not-found")}");
                     return;
@@ -215,32 +222,32 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     if (CanTarget(player, target))
                     {
                         string error = "";
-                        if(PlayEmote(target, emoteObj, ref error, player))
+                        if (PlayEmote(target, emoteObj, ref error, player))
                             count++;
                     }
                 });
-                if(count > 0)
+                if (count > 0)
                     command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.played-emote-on-target", count)}");
                 else
                     command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.failplayed-emote-on-target")}");
             }, CommandUsage.CLIENT_AND_SERVER);
         }
 
-        foreach(var setdancecommand in Config.AdminSetDanceCommand)
+        foreach (var setdancecommand in Config.AdminSetDanceCommand)
         {
             RegisterCommand(setdancecommand, "Set dance to player", (CCSPlayerController? player, CommandInfo command) =>
             {
-                if(player != null)
+                if (player != null)
                 {
                     bool bAccess = HasPermision(player, Config.AdminSetEmoteDanceCommandPerm);
-                    if(!bAccess)
+                    if (!bAccess)
                     {
                         player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.command.no-permission")}");
                         return;
                     }
                 }
 
-                if(command.ArgCount != 3)
+                if (command.ArgCount != 3)
                 {
                     command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.setdance-usage", setdancecommand)}");
                     return;
@@ -250,7 +257,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
                 var danceObj = GetEmoteByName(dance, false, true);
 
-                if(danceObj == null)
+                if (danceObj == null)
                 {
                     command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.not-found")}");
                     return;
@@ -272,11 +279,11 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     if (CanTarget(player, target))
                     {
                         string error = "";
-                        if(PlayEmote(target, danceObj, ref error, player))
+                        if (PlayEmote(target, danceObj, ref error, player))
                             count++;
                     }
                 });
-                if(count > 0)
+                if (count > 0)
                     command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.played-dance-on-target", count)}");
                 else
                     command.ReplyToCommand($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote.failplayed-dance-on-target")}");
@@ -285,36 +292,36 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
         var buttons = Config.EmoteCancelButtons.Split(',');
 
-        foreach(var button in buttons)
+        foreach (var button in buttons)
         {
-            if(button.Equals("w", StringComparison.CurrentCultureIgnoreCase))
+            if (button.Equals("w", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Forward.ToString());
-            else if(button.Equals("s", StringComparison.CurrentCultureIgnoreCase))
+            else if (button.Equals("s", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Back.ToString());
-            else if(button.Equals("a", StringComparison.CurrentCultureIgnoreCase))
+            else if (button.Equals("a", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Moveleft.ToString());
-            else if(button.Equals("d", StringComparison.CurrentCultureIgnoreCase))
+            else if (button.Equals("d", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Moveright.ToString());
-            else if(button.Equals("use", StringComparison.CurrentCultureIgnoreCase))
+            else if (button.Equals("use", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Use.ToString());
-            else if(button.Equals("speed", StringComparison.CurrentCultureIgnoreCase))
+            else if (button.Equals("speed", StringComparison.CurrentCultureIgnoreCase))
             {
                 g_CancelButtons.Add(PlayerButtons.Speed.ToString());
                 g_CancelButtons.Add(PlayerButtons.Walk.ToString());
             }
-            else if(button.Equals("jump", StringComparison.CurrentCultureIgnoreCase))
+            else if (button.Equals("jump", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Jump.ToString());
-            else if(button.Equals("leftclick", StringComparison.CurrentCultureIgnoreCase))
+            else if (button.Equals("leftclick", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Attack.ToString());
-            else if(button.Equals("crouch", StringComparison.CurrentCultureIgnoreCase))
+            else if (button.Equals("crouch", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Duck.ToString());
-            else if(button.Equals("scoreboard", StringComparison.CurrentCultureIgnoreCase) && Config.EmoteMenuType != 2)
+            else if (button.Equals("scoreboard", StringComparison.CurrentCultureIgnoreCase) && Config.EmoteMenuType != 2)
                 g_CancelButtons.Add(PlayerButtons.Scoreboard.ToString());
-            else if(button.Equals("inspect", StringComparison.CurrentCultureIgnoreCase))
+            else if (button.Equals("inspect", StringComparison.CurrentCultureIgnoreCase))
                 g_CancelButtons.Add(PlayerButtons.Inspect.ToString());
         }
 
-        if(Config.StopDamageWhenInEmote && IsCS2FixesInstalled())
+        if (Config.StopDamageWhenInEmote && IsCS2FixesInstalled())
         {
             Config.StopDamageWhenInEmote = false;
             Logger.LogWarning("CS2Fixes DETECTED. Setting value of 'StopDamageWhenInEmote' as false.");
@@ -345,7 +352,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             StopAllEmotes();
         };
 
-        if(hotReload)
+        if (hotReload)
         {
             OnMapStart(Server.MapName);
         }
@@ -411,12 +418,12 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             return HookResult.Continue;
         }
 
-        if(!Config.ChatTriggersEnabled || player == null)
+        if (!Config.ChatTriggersEnabled || player == null)
             return HookResult.Continue;
 
         string message = um.ReadString("param2");
 
-        if(string.IsNullOrEmpty(message) || message.StartsWith("!") || message.StartsWith("/") || message.StartsWith("."))
+        if (string.IsNullOrEmpty(message) || message.StartsWith("!") || message.StartsWith("/") || message.StartsWith("."))
             return HookResult.Continue;
 
         return OnPlayerSay(player, message);
@@ -427,12 +434,12 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     */
     public HookResult OnSay(CCSPlayerController? player, CommandInfo command)
     {
-        if(!Config.ChatTriggersEnabled || player == null)
+        if (!Config.ChatTriggersEnabled || player == null)
             return HookResult.Continue;
 
         string message = command.GetArg(1);
 
-        if(string.IsNullOrEmpty(message) || message.StartsWith("!") || message.StartsWith("/") || message.StartsWith("."))
+        if (string.IsNullOrEmpty(message) || message.StartsWith("!") || message.StartsWith("/") || message.StartsWith("."))
             return HookResult.Continue;
 
         OnPlayerSay(player, message);
@@ -442,12 +449,12 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
     private HookResult OnPlayerSay(CCSPlayerController player, string message)
     {
-        foreach(var trigger in g_ChatTriggers)
+        foreach (var trigger in g_ChatTriggers)
         {
-            if(trigger.Value.Any(message.Equals))
+            if (trigger.Value.Any(message.Equals))
             {
                 bool hasPerm = HasPermision(player, Config.EmoteDanceCommandPerm);
-                if(!hasPerm)
+                if (!hasPerm)
                 {
                     player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.no-access")}");
                     return HookResult.Stop;
@@ -455,16 +462,16 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
                 hasPerm = HasPermision(player, trigger.Key.Permission);
 
-                if(!hasPerm)
+                if (!hasPerm)
                 {
                     player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.no-access")}");
                     return HookResult.Stop;
                 }
 
                 string error = "";
-                if(!PlayEmote(player, trigger.Key, ref error))
+                if (!PlayEmote(player, trigger.Key, ref error))
                 {
-                    if(!string.IsNullOrEmpty(error))
+                    if (!string.IsNullOrEmpty(error))
                         player.PrintToChat(error);
                 }
                 return HookResult.Stop;
@@ -481,6 +488,8 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
         EmitSoundExtension.ClearSounds();
 
+        playerWeapons.Clear();
+
         AddTimer(1.0f, () =>
         {
             g_GameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
@@ -489,16 +498,16 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
     public void OnTick()
     {
-        foreach(var player in Utilities.GetPlayers().Where(p => !p.IsHLTV && !p.IsBot))
+        foreach (var player in Utilities.GetPlayers().Where(p => !p.IsHLTV && !p.IsBot))
         {
             var steamID = player.SteamID;
 
-            if(!g_PlayerSettings.ContainsKey(steamID))
+            if (!g_PlayerSettings.ContainsKey(steamID))
             {
                 continue;
             }
 
-            if(g_PlayerSettings[steamID].IsDancing)
+            if (g_PlayerSettings[steamID].IsDancing)
             {
                 /*
                 if(player.PlayerPawn.IsValidPawnAlive() && !player.PlayerPawn.Value!.OnGroundLastTick)
@@ -508,13 +517,13 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                 }
                 */
 
-                if(player.PlayerPawn.IsValidPawnAlive() && GetPlayerSpeed(player) > 350 && Config.EmoteFreezePlayer)
+                if (player.PlayerPawn.IsValidPawnAlive() && GetPlayerSpeed(player) > 350 && Config.EmoteFreezePlayer)
                 {
                     StopEmote(player);
                     continue;
                 }
 
-                if(Config.EmoteMenuType != 2 || (Config.EmoteMenuType == 2 && (Menu.GetMenus(player) == null || Menu.GetMenus(player)?.Count <= 0)))
+                if (Config.EmoteMenuType != 2 || (Config.EmoteMenuType == 2 && (Menu.GetMenus(player) == null || Menu.GetMenus(player)?.Count <= 0)))
                 {
                     if (g_CancelButtons.Any(button => player.Buttons.ToString().Contains(button)))
                     {
@@ -523,24 +532,24 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     }
                 }
 
-                if(g_PlayerSettings[steamID].CameraProp != null)
+                if (g_PlayerSettings[steamID].CameraProp != null)
                 {
                     UpdateCamera(g_PlayerSettings[steamID].CameraProp!, player);
                 }
 
-                if(Config.SmoothCamera && Config.FixedCamera)
+                if (Config.SmoothCamera && Config.FixedCamera)
                 {
-                    if(g_PlayerSettings[steamID].AnimProp != null)
+                    if (g_PlayerSettings[steamID].AnimProp != null)
                     {
                         UpdateAnimProp(g_PlayerSettings[steamID].AnimProp!, player);
                     }
                 }
 
-                if(player.PlayerPawn.IsValidPawnAlive())
+                if (player.PlayerPawn.IsValidPawnAlive())
                 {
                     var activeWeapon = player.PlayerPawn.Value!.WeaponServices!.ActiveWeapon.Value;
 
-                    if(activeWeapon != null && activeWeapon.IsValid)
+                    if (activeWeapon != null && activeWeapon.IsValid)
                     {
                         var tickThreshold = Server.TickCount + (64 * 60);
                         var tickNextAttack = Server.TickCount + (64 * 120);
@@ -562,7 +571,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
     public void OnServerPrecacheResources(ResourceManifest resource)
     {
-        foreach(var sefile in Config.EmoteSoundEventFiles)
+        foreach (var sefile in Config.EmoteSoundEventFiles)
         {
             DebugLogs("Precaching sef: " + sefile);
             resource.AddResource(sefile);
@@ -570,9 +579,9 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 
         List<string> precachedModels = new();
 
-        foreach(var emote in Config.EmoteDances)
+        foreach (var emote in Config.EmoteDances)
         {
-            if(precachedModels.Contains(emote.Model))
+            if (precachedModels.Contains(emote.Model))
                 continue;
 
             DebugLogs("Precaching model: " + emote.Model);
@@ -590,7 +599,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     [ConsoleCommand("css_dtriggers", "Displays all chat triggers for emotes/dance")]
     public void OnCommandListChatTriggers(CCSPlayerController? player, CommandInfo commandInfo)
     {
-        if(player == null || !Config.ChatTriggersEnabled)
+        if (player == null || !Config.ChatTriggersEnabled)
             return;
 
         player.PrintToChat($" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, "emote.list-chat-triggers")}");
@@ -600,13 +609,13 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         int count = 0;
         foreach (var trigger in g_ListChatTriggers)
         {
-            if(batch.Length+trigger.Length > 507)
+            if (batch.Length + trigger.Length > 507)
             {
                 player.PrintToChat($" {ChatColors.LightPurple}{batch},");
                 batch = "";
             }
 
-            if(string.IsNullOrEmpty(batch))
+            if (string.IsNullOrEmpty(batch))
             {
                 batch = trigger;
             }
@@ -618,7 +627,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         }
 
 
-        if(!string.IsNullOrEmpty(batch))
+        if (!string.IsNullOrEmpty(batch))
         {
             player.PrintToChat($" {ChatColors.LightPurple}{batch}");
         }
