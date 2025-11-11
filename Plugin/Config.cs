@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using FortniteEmotes.API;
 
 namespace FortniteEmotes;
+
 public partial class PluginConfig : BasePluginConfig
 {
     [JsonPropertyName("EmoteAllowedPeriod")]
@@ -22,12 +23,6 @@ public partial class PluginConfig : BasePluginConfig
 
     [JsonPropertyName("KitsuneMenuDeveloperDisplay")]
     public bool KitsuneMenuDeveloperDisplay { get; set; } = true;
-
-    [JsonPropertyName("SmoothCamera")]
-    public bool SmoothCamera { get; set; } = true;
-
-    [JsonPropertyName("FixedCamera")]
-    public bool FixedCamera { get; set; } = false;
 
     [JsonPropertyName("EmoteFreezePlayer")]
     public bool EmoteFreezePlayer { get; set; } = true;

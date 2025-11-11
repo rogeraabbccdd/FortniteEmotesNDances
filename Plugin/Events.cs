@@ -60,17 +60,14 @@ public partial class Plugin
 
         StopEmote(player, true);
 
-        if (Config.SmoothCamera)
+        Server.NextWorldUpdate(() =>
         {
-            Server.NextWorldUpdate(() =>
-            {
-                if (player == null || !player.IsValid)
-                    return;
+            if (player == null || !player.IsValid)
+                return;
 
-                if (Config.EmoteMenuType == 2 && Menu != null && Menu.GetMenus(player) != null && Menu.GetMenus(player)!.Where(m => m.RequiresFreeze)?.Count() > 0)
-                    SetPlayerMoveType(player, MoveType_t.MOVETYPE_OBSOLETE);
-            });
-        }
+            if (Config.EmoteMenuType == 2 && Menu != null && Menu.GetMenus(player) != null && Menu.GetMenus(player)!.Where(m => m.RequiresFreeze)?.Count() > 0)
+                SetPlayerMoveType(player, MoveType_t.MOVETYPE_OBSOLETE);
+        });
         return HookResult.Continue;
     }
 

@@ -20,7 +20,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     public override string ModuleName => "Fortnite Emotes & Dances";
     public override string ModuleDescription => "CS2 Port of Fortnite Emotes & Dances";
     public override string ModuleAuthor => "Cruze (https://github.com/cruze03)";
-    public override string ModuleVersion => "1.1.1";
+    public override string ModuleVersion => "1.1.2";
 
     public required PluginConfig Config { get; set; } = new();
 
@@ -50,11 +50,6 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         }
 
         Config = config;
-
-        // TODO: Fix these
-        Config.SmoothCamera = true;
-        Config.FixedCamera = false;
-        Config.EmoteFreezePlayer = true;
 
         g_EmoteTransMap = new();
         g_ChatTriggers = new();
@@ -326,6 +321,14 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
             Config.StopDamageWhenInEmote = false;
             Logger.LogWarning("CS2Fixes DETECTED. Setting value of 'StopDamageWhenInEmote' as false.");
         }
+
+        string error = "";
+
+        if (!AreAllDependaciesInstalled(ref error))
+        {
+            Logger.LogError($"Plugin failed to load because {error}");
+            Server.ExecuteCommand($"css_plugins unload {Path.GetFileNameWithoutExtension(ModulePath)}");
+        }
     }
 
     public override void Load(bool hotReload)
@@ -432,20 +435,20 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     /*
     Not using this since RemoveCommandListener("say") doesn't actually remove listener and was causing issue when hot-reloading plugin
     */
-    public HookResult OnSay(CCSPlayerController? player, CommandInfo command)
-    {
-        if (!Config.ChatTriggersEnabled || player == null)
-            return HookResult.Continue;
+    // public HookResult OnSay(CCSPlayerController? player, CommandInfo command)
+    // {
+    //     if (!Config.ChatTriggersEnabled || player == null)
+    //         return HookResult.Continue;
 
-        string message = command.GetArg(1);
+    //     string message = command.GetArg(1);
 
-        if (string.IsNullOrEmpty(message) || message.StartsWith("!") || message.StartsWith("/") || message.StartsWith("."))
-            return HookResult.Continue;
+    //     if (string.IsNullOrEmpty(message) || message.StartsWith("!") || message.StartsWith("/") || message.StartsWith("."))
+    //         return HookResult.Continue;
 
-        OnPlayerSay(player, message);
+    //     OnPlayerSay(player, message);
 
-        return HookResult.Continue;
-    }
+    //     return HookResult.Continue;
+    // }
 
     private HookResult OnPlayerSay(CCSPlayerController player, string message)
     {
@@ -537,11 +540,11 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     UpdateCamera(g_PlayerSettings[steamID].CameraProp!, player);
                 }
 
-                if (Config.SmoothCamera && Config.FixedCamera)
+                if (!Config.EmoteFreezePlayer)
                 {
-                    if (g_PlayerSettings[steamID].AnimProp != null)
+                    if (g_PlayerSettings[steamID].CloneProp != null)
                     {
-                        UpdateAnimProp(g_PlayerSettings[steamID].AnimProp!, player);
+                        UpdateAnimProp(g_PlayerSettings[steamID].CloneProp!, player);
                     }
                 }
 

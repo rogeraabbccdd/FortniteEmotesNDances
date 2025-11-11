@@ -3,7 +3,6 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Entities.Constants;
 using CounterStrikeSharp.API.Modules.Memory;
-using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using CSSTimer = CounterStrikeSharp.API.Modules.Timers.Timer;
@@ -13,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using FortniteEmotes.API;
+using System.Numerics;
 
 namespace FortniteEmotes;
 
@@ -25,7 +25,7 @@ public partial class Plugin
         public int PlayerAlpha { get; set; } = 255;
         public MoveType_t PlayerMoveType { get; set; } = MoveType_t.MOVETYPE_WALK;
         public CDynamicProp? CameraProp { get; set; } = null;
-        public CDynamicProp? AnimProp { get; set; } = null;
+        public CDynamicProp? CloneProp { get; set; } = null;
         public uint CameraPropIndex { get; set; } = 0;
         public DateTime Cooldown { get; set; } = DateTime.Now;
         public CSSTimer? Timer { get; set; } = null;
@@ -37,7 +37,7 @@ public partial class Plugin
         public PlayerSettings()
         {
             CloneModelIndex = 0;
-            AnimProp = null;
+            CloneProp = null;
             EmoteModelIndex = 0;
             PlayerAlpha = 255;
             PlayerMoveType = MoveType_t.MOVETYPE_WALK;
@@ -53,7 +53,7 @@ public partial class Plugin
 
         public void Reset()
         {
-            AnimProp = null;
+            CloneProp = null;
             CloneModelIndex = 0;
             EmoteModelIndex = 0;
             PlayerAlpha = 255;
@@ -93,7 +93,7 @@ public partial class Plugin
                 break;
         }
 
-        if (!target.IsValidPlayer() || !target.PlayerPawn.IsValidPawnAlive() || target.ControllingBot || target.AbsOrigin == null || target.PlayerPawn.Value?.CameraServices == null)
+        if (!target.IsValidPlayer() || !target.PlayerPawn.IsValidPawnAlive() || target.ControllingBot || target.PlayerPawn.Value!.AbsOrigin == null || target.PlayerPawn.Value.AbsRotation == null || target.PlayerPawn.Value.CameraServices == null)
         {
             error = $" {Localizer.ForPlayer(player, "emote.prefix")} {Localizer.ForPlayer(player, $"emote{(player == null ? "" : ".player")}.alivecheck")}";
             return false;
@@ -184,18 +184,12 @@ public partial class Plugin
         SetPropInvisible(prop);
 
         prop.DispatchSpawn();
-        prop.Teleport(target.PlayerPawn.Value.AbsOrigin, target.PlayerPawn.Value.AbsRotation, null);
+        prop.Teleport((Vector3)target.PlayerPawn.Value.AbsOrigin, (Vector3)target.PlayerPawn.Value.AbsRotation);
         prop.UseAnimGraph = false;
 
         var cloneprop = CreateClone(target, prop, propName);
         g_PlayerSettings[steamID].CloneModelIndex = cloneprop?.Index ?? 0;
-        g_PlayerSettings[steamID].AnimProp = prop;
-
-        if (g_PlayerSettings[steamID].CloneModelIndex == 0 && !Config.SmoothCamera)
-        {
-            SetPlayerEffects(target, true);
-            target.PlayerPawn.Value.AcceptInput("FollowEntity", target.PlayerPawn.Value, target.PlayerPawn.Value, propName);
-        }
+        g_PlayerSettings[steamID].CloneProp = prop;
 
         // SetPlayerWeaponInvisible(target);
 
@@ -320,11 +314,6 @@ public partial class Plugin
 
     private CDynamicProp? CreateClone(CCSPlayerController player, CDynamicProp prop, string propName)
     {
-        if (!Config.SmoothCamera)
-        {
-            return null;
-        }
-
         string model = player.PlayerPawn.Value?.CBodyComponent?.SceneNode?.GetSkeletonInstance().ModelState.ModelName ?? string.Empty;
         ulong meshgroupmask = player.PlayerPawn.Value?.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.MeshGroupMask ?? 0;
 
@@ -354,7 +343,7 @@ public partial class Plugin
 
         SetCollision(clone, CollisionGroup.COLLISION_GROUP_NEVER, SolidType_t.SOLID_NONE, 12);
         clone.DispatchSpawn();
-        clone.Teleport(player.PlayerPawn.Value!.AbsOrigin, player.PlayerPawn.Value.AbsRotation, null);
+        clone.Teleport((Vector3)player.PlayerPawn.Value!.AbsOrigin!, (Vector3)player.PlayerPawn.Value.AbsRotation!);
         clone.UseAnimGraph = false;
 
         clone.AcceptInput("FollowEntity", prop, prop, propName);
@@ -373,8 +362,10 @@ public partial class Plugin
 
         Server.NextWorldUpdate(() =>
         {
-            if (g_PlayerSettings.ContainsKey(steamID))
-                g_PlayerSettings[steamID].PlayerAlpha = player.PlayerPawn.Value!.Render.A;
+            if (!g_PlayerSettings.ContainsKey(steamID)) return;
+            if (!g_PlayerSettings[steamID].IsDancing) return;
+
+            g_PlayerSettings[steamID].PlayerAlpha = player.PlayerPawn.Value!.Render.A;
             SetPlayerInvisible(player);
         });
         return clone;
@@ -542,20 +533,13 @@ public partial class Plugin
 
         GivePlayerWeaponsBack(player);
 
-        if (!Config.SmoothCamera)
-        {
-            SetPlayerEffects(player, false);
-        }
-        else
-        {
-            SetPlayerVisible(player);
+        SetPlayerVisible(player);
 
-            if (g_PlayerSettings.ContainsKey(steamID)
-                && (Config.EmoteMenuType != 2 || (Config.EmoteMenuType == 2 && (Menu.GetMenus(player) == null || Menu.GetMenus(player)?.Count <= 0)))
-                && player.PlayerPawn.IsValidPawnAlive()
-                && g_PlayerSettings[steamID].PlayerMoveType != player.PlayerPawn.Value!.ActualMoveType)
-                SetPlayerMoveType(player, g_PlayerSettings[steamID].PlayerMoveType);
-        }
+        if (g_PlayerSettings.ContainsKey(steamID)
+            && (Config.EmoteMenuType != 2 || (Config.EmoteMenuType == 2 && (Menu.GetMenus(player) == null || Menu.GetMenus(player)?.Count <= 0)))
+            && player.PlayerPawn.IsValidPawnAlive()
+            && g_PlayerSettings[steamID].PlayerMoveType != player.PlayerPawn.Value!.ActualMoveType)
+            SetPlayerMoveType(player, g_PlayerSettings[steamID].PlayerMoveType);
 
         RefreshPlayerGloves(player, true);
 
@@ -572,7 +556,7 @@ public partial class Plugin
         g_PlayerSettings[steamID].PlayerAlpha = 255;
         g_PlayerSettings[steamID].PlayerMoveType = MoveType_t.MOVETYPE_WALK;
         g_PlayerSettings[steamID].CameraProp = null;
-        g_PlayerSettings[steamID].AnimProp = null;
+        g_PlayerSettings[steamID].CloneProp = null;
 
         foreach (var model in emoteModels)
         {
@@ -593,7 +577,8 @@ public partial class Plugin
         return (int)Math.Round(player.PlayerPawn.Value!.AbsVelocity.Length2D());
     }
 
-    private void SetCollision(CBaseEntity entity, CollisionGroup collisionGroup, SolidType_t solidType, byte solidFlags)
+
+    private static void SetCollision(CBaseEntity entity, CollisionGroup collisionGroup, SolidType_t solidType, byte solidFlags)
     {
         if (entity.Collision == null) return;
 
@@ -607,10 +592,16 @@ public partial class Plugin
         Utilities.SetStateChanged(entity, "CCollisionProperty", "m_nSolidType");
         Utilities.SetStateChanged(entity, "CCollisionProperty", "m_usSolidFlags");
 
-        VirtualFunctionVoid<nint> collisionRulesChanged = new VirtualFunctionVoid<nint>(entity.Handle, GameData.GetOffset("CBaseEntity_CollisionRulesChanged"));
+        var collisionRulesChanged = GetCollisionRulesChanged(entity.Handle);
 
         // Invokes the updated CollisionRulesChanged information to ensure the player's collision is correctly set
         collisionRulesChanged.Invoke(entity.Handle);
+    }
+
+    private static readonly int _collisionRulesChangedOffset = GameData.GetOffset("CBaseEntity_CollisionRulesChanged");
+    private static VirtualFunctionVoid<nint> GetCollisionRulesChanged(nint handle)
+    {
+        return new VirtualFunctionVoid<nint>(handle, _collisionRulesChangedOffset);
     }
 
     private CDynamicProp? SetCam(CCSPlayerController player)
@@ -622,7 +613,7 @@ public partial class Plugin
         if (prop == null)
             return null;
 
-        prop.Teleport(CalculatePositionInFront(player, -110, 75), player.PlayerPawn.Value.V_angle);
+        prop.Teleport(CalculatePositionInFront(player, -110, 75), (Vector3)player.PlayerPawn.Value.V_angle);
 
         prop.Entity!.Name = "cameraProp_" + new Random().Next(1000000, 9999999).ToString();
         prop.CBodyComponent!.SceneNode!.Owner!.Entity!.Flags &= unchecked((uint)~(1 << 2));
@@ -632,15 +623,32 @@ public partial class Plugin
         SetPropInvisible(prop);
 
         prop.DispatchSpawn();
-        prop.Teleport(player.PlayerPawn.Value.AbsOrigin, player.PlayerPawn.Value.V_angle);
+        prop.Teleport((Vector3)player.PlayerPawn.Value.AbsOrigin!, (Vector3)player.PlayerPawn.Value.V_angle);
 
         SetCollision(prop, CollisionGroup.COLLISION_GROUP_NEVER, SolidType_t.SOLID_VPHYSICS, 12);
 
         Server.NextWorldUpdate(() =>
         {
-            player.PlayerPawn.Value.CameraServices.ViewEntity.Raw = prop.EntityHandle.Raw;
+            if (prop.IsValid && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
+            {
+                var steamID = player.SteamID;
+                if (!g_PlayerSettings.ContainsKey(steamID))
+                {
+                    return;
+                }
 
-            Utilities.SetStateChanged(player.PlayerPawn.Value, "CBasePlayerPawn", "m_pCameraServices");
+                if (!g_PlayerSettings[steamID].IsDancing)
+                {
+                    return;
+                }
+
+                prop.Teleport(CalculatePositionInFront(player, -110, 90), (Vector3)player.PlayerPawn.Value.V_angle);
+
+                player.PlayerPawn.Value.CameraServices.ViewEntity.Raw = prop.EntityHandle.Raw;
+
+                Utilities.SetStateChanged(player.PlayerPawn.Value, "CBasePlayerPawn", "m_pCameraServices");
+            }
+
         });
 
         return prop;
@@ -651,13 +659,15 @@ public partial class Plugin
         if (!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive() || player.AbsOrigin == null || player.PlayerPawn.Value!.CameraServices == null)
             return;
 
-        player.PlayerPawn.Value.CameraServices.ViewEntity.Raw = uint.MaxValue;
+        Server.NextWorldUpdate(() =>
+        {
+            if (player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
+            {
+                player.PlayerPawn.Value.CameraServices.ViewEntity.Raw = uint.MaxValue;
 
-        Server.NextWorldUpdate(() => Utilities.SetStateChanged(player.PlayerPawn.Value, "CBasePlayerPawn", "m_pCameraServices"));
-
-        var steamID = player.SteamID;
-
-        g_PlayerSettings[steamID].CameraPropIndex = 0;
+                Utilities.SetStateChanged(player.PlayerPawn.Value, "CBasePlayerPawn", "m_pCameraServices");
+            }
+        });
     }
 
     private void SetPlayerEffects(CCSPlayerController player, bool set)
@@ -855,6 +865,8 @@ public partial class Plugin
                         if (newWeapon == null) continue;
                         Server.NextWorldUpdate(() =>
                         {
+                            if (!newWeapon.IsValid) return;
+
                             try
                             {
                                 newWeapon.Clip1 = ammo.Item1;
@@ -987,24 +999,22 @@ public partial class Plugin
     {
         if (target.IsValidPlayer() && target.PlayerPawn.IsValidPawnAlive() && target.AbsOrigin != null)
         {
-            Vector positionBehind = CalculatePositionInFront(target, -110, 75f); //130 90
-            Vector position = Lerp(GetPosition(cameraProp), positionBehind, 0.1f);
-            cameraProp.Teleport(position, target.PlayerPawn.Value!.V_angle);
-
-            // Vector velocity = CalculateVelocity(cameraProp.AbsOrigin!, CalculatePositionInFront(target, -110, 75), 0.01f);
-            // cameraProp.Teleport(null, target.PlayerPawn.Value!.V_angle, velocity);
+            Vector3 positionBehind = CalculatePositionInFront(target, -110, 75f); //130 90
+            Vector3 position = Lerp(GetPosition(cameraProp), positionBehind, 0.1f);
+            cameraProp.Teleport(position, (Vector3)target.PlayerPawn.Value!.V_angle);
         }
     }
 
     public static void UpdateAnimProp(CDynamicProp animProp, CCSPlayerController target)
     {
-        if (target.IsValidPlayer() && target.PlayerPawn.IsValidPawnAlive() && target.PlayerPawn.Value!.AbsOrigin != null)
+        if (target.IsValidPlayer() && target.PlayerPawn.IsValidPawnAlive()
+        && target.PlayerPawn.Value!.AbsOrigin != null && target.PlayerPawn.Value.AbsRotation != null)
         {
-            animProp.Teleport(target.PlayerPawn.Value.AbsOrigin, target.PlayerPawn.Value.AbsRotation);
+            animProp.Teleport((Vector3)target.PlayerPawn.Value.AbsOrigin, (Vector3)target.PlayerPawn.Value.AbsRotation);
         }
     }
 
-    public static Vector CalculatePositionInFront(CCSPlayerController player, float offSetXY, float offSetZ = 0)
+    public static Vector3 CalculatePositionInFront(CCSPlayerController player, float offSetXY, float offSetZ = 0)
     {
         var pawn = player.PlayerPawn.Value;
         // Extract yaw angle from player's rotation QAngle
@@ -1018,7 +1028,7 @@ public partial class Plugin
         float offsetY = offSetXY * (float)Math.Sin(yawAngleRadians);
 
         // Calculate position in front of the player
-        var positionInFront = new Vector
+        var positionInFront = new Vector3
         {
             X = pawn!.AbsOrigin!.X + offsetX,
             Y = pawn!.AbsOrigin!.Y + offsetY,
@@ -1028,21 +1038,14 @@ public partial class Plugin
         return positionInFront;
     }
 
-    public static Vector GetPosition(CDynamicProp prop)
+    public static Vector3 GetPosition(CDynamicProp prop)
     {
-        Vector position = new Vector
-        {
-            X = prop.AbsOrigin!.X,
-            Y = prop.AbsOrigin.Y,
-            Z = prop.AbsOrigin.Z
-        };
-
-        return position;
+        return (Vector3)prop.AbsOrigin!;
     }
 
-    public static Vector Lerp(Vector from, Vector to, float t)
+    public static Vector3 Lerp(Vector3 from, Vector3 to, float t)
     {
-        Vector vector = new Vector
+        Vector3 vector = new Vector3
         {
             X = from.X + (to.X - from.X) * t,
             Y = from.Y + (to.Y - from.Y) * t,
@@ -1077,6 +1080,31 @@ public partial class Plugin
         string binaryPath = Path.Combine(Server.GameDirectory, "csgo", "addons/cs2fixes/bin", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win64/cs2fixes.dll" : "linuxsteamrt64/cs2fixes.so");
 
         return File.Exists(vdfPath) && File.Exists(binaryPath);
+    }
+
+    private readonly string[] _requiredShared = ["FortniteEmotesNDancesAPI", "KitsuneMenu"];
+    private bool AreAllDependaciesInstalled(ref string error)
+    {
+        string vdfPath = Path.Combine(Server.GameDirectory, "csgo", "addons/metamod", "multiaddonmanager.vdf");
+        string binaryPath = Path.Combine(Server.GameDirectory, "csgo", "addons/multiaddonmanager/bin", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "multiaddonmanager.dll" : "multiaddonmanager.so");
+
+        if (!File.Exists(vdfPath) || !File.Exists(binaryPath))
+        {
+            error = "MultiAddonManager is not installed.";
+            return false;
+        }
+
+        foreach (var depen in _requiredShared)
+        {
+            string dllPath = Path.Combine(Server.GameDirectory, "csgo", "addons/counterstrikesharp/shared", depen, $"{depen}.dll");
+
+            if (!File.Exists(dllPath))
+            {
+                error = $"{depen} is not installed.";
+                return false;
+            }
+        }
+        return true;
     }
 }
 
@@ -1153,8 +1181,7 @@ public static class EmitSoundExtension
 
     public static void EmitEmoteSound(this CCSPlayerController player, string soundName, float volume = 1f)
     {
-        RecipientFilter filter = [player];
-        var guid = player.EmitSound(soundName, filter, volume);
+        var guid = player.EmitSound(soundName, volume: volume);
 
         if (!_playerSounds.ContainsKey(player))
         {

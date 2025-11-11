@@ -21,7 +21,7 @@ This plugin allows players to use Emotes & Dances just like Fortnite.
 - [Metamod](https://www.metamodsource.net/downloads.php?branch=dev)
 - [CounterStrikeSharp v309+](https://github.com/roflmuffin/CounterStrikeSharp/releases/latest)
 - [MultiAddonManager](https://github.com/Source2ZE/MultiAddonManager/releases/latest)
-- [CS2-EmitSoundVolumeFix](https://github.com/samyycX/CS2-EmitSoundVolumeFix/) (optional but recommended)
+- [CSSharpPatcher](https://github.com/samyycX/CSSharpPatcher) (optional but recommended)
 
 ## Installation
 - After installing all the dependencies, drag and drop this plugin's latest release under `addons/counterstrikesharp`
