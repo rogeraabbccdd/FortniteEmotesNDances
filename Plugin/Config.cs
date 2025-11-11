@@ -76,7 +76,7 @@ public partial class PluginConfig : BasePluginConfig
     public bool DebugLogs { get; set; } = false;
 
     [JsonPropertyName("ForcePlayerVisibility")]
-    public bool ForcePlayerVisibility { get; set; } = true;
+    public bool ForcePlayerVisibility { get; set; } = false;
 
     [JsonPropertyName("ConfigVersion")]
     public override int Version { get; set; } = 4;
