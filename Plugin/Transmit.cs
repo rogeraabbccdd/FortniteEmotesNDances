@@ -2,11 +2,12 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 
 namespace FortniteEmotes;
+
 public partial class Plugin
 {
     public void Transmit_OnLoad()
     {
-        if(Config.EmoteHidePlayers != 0)
+        if (Config.EmoteHidePlayers != 0)
         {
             RegisterListener<Listeners.CheckTransmit>(Hook_CheckTransmit);
         }
@@ -14,7 +15,7 @@ public partial class Plugin
 
     public void Transmit_OnUnload()
     {
-        if(Config.EmoteHidePlayers != 0)
+        if (Config.EmoteHidePlayers != 0)
         {
             RemoveListener<Listeners.CheckTransmit>(Hook_CheckTransmit);
         }
@@ -42,20 +43,20 @@ public partial class Plugin
                 if (pawn == null)
                     continue;
 
-                if(!g_PlayerSettings.ContainsKey(steamID))
+                if (!g_PlayerSettings.ContainsKey(steamID))
                     continue;
 
-                if(!g_PlayerSettings[steamID].IsDancing)
+                if (!g_PlayerSettings[steamID].IsDancing)
                     continue;
 
-                switch(Config.EmoteHidePlayers)
+                switch (Config.EmoteHidePlayers)
                 {
                     case 1:
-                        if(player.Team != target.Team)
+                        if (player.Team != target.Team)
                             info.TransmitEntities.Remove((int)pawn.Index);
                         break;
                     case 2:
-                        if(player.Team == target.Team)
+                        if (player.Team == target.Team)
                             info.TransmitEntities.Remove((int)pawn.Index);
                         break;
                     case 3:

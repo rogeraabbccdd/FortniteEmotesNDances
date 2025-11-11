@@ -722,7 +722,10 @@ public partial class Plugin
         if (!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive())
             return;
 
-        player.PlayerPawn.Value!.Render = Color.FromArgb(0, 255, 255, 255);
+        if (player.PlayerPawn.Value!.Render == Color.FromArgb(0, 255, 255, 255))
+            return;
+
+        player.PlayerPawn.Value.Render = Color.FromArgb(0, 255, 255, 255);
         Utilities.SetStateChanged(player.PlayerPawn.Value, "CBaseModelEntity", "m_clrRender");
     }
 

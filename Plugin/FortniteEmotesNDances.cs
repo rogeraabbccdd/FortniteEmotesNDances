@@ -520,6 +520,11 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                 }
                 */
 
+                if (Config.ForcePlayerVisibility)
+                {
+                    SetPlayerInvisible(player);
+                }
+
                 if (player.PlayerPawn.IsValidPawnAlive() && GetPlayerSpeed(player) > 350 && Config.EmoteFreezePlayer)
                 {
                     StopEmote(player);
