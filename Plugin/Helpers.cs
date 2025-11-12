@@ -9,10 +9,14 @@ using CSSTimer = CounterStrikeSharp.API.Modules.Timers.Timer;
 using CounterStrikeSharp.API.Modules.UserMessages;
 using CounterStrikeSharp.API.Core.Translations;
 using Microsoft.Extensions.Logging;
+using Vector = CounterStrikeSharp.API.Modules.Utils.Vector;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using FortniteEmotes.API;
 using System.Numerics;
+
+using CS2TraceRay.Class;
+using CS2TraceRay.Enum;
 
 namespace FortniteEmotes;
 
@@ -998,12 +1002,12 @@ public partial class Plugin
         pawn.AcceptInput("SetBodygroup", value: $"{group},{value}");
     }
 
-    public static void UpdateCamera(CDynamicProp cameraProp, CCSPlayerController target)
+    public static void UpdateCamera(CDynamicProp cameraProp, CCSPlayerController target, bool blockcamera = true)
     {
         if (target.IsValidPlayer() && target.PlayerPawn.IsValidPawnAlive() && target.AbsOrigin != null)
         {
-            Vector3 positionBehind = CalculatePositionInFront(target, -110, 75f); //130 90
-            Vector3 position = Lerp(GetPosition(cameraProp), positionBehind, 0.1f);
+            Vector3 positionBehind = blockcamera ? CalculateSafeCameraPosition(target, 110f, 75f) : CalculatePositionInFront(target, -110f, 75f);
+            Vector3 position = Lerp(GetPosition(cameraProp), positionBehind, blockcamera ? 0.3f : 0.1f);
             cameraProp.Teleport(position, (Vector3)target.PlayerPawn.Value!.V_angle);
         }
     }
@@ -1039,6 +1043,48 @@ public partial class Plugin
         };
 
         return positionInFront;
+    }
+
+    public static readonly Vector __camPos = new();
+
+    public static Vector3 CalculateSafeCameraPosition(
+        CCSPlayerController player,
+        float desiredDistance,
+        float verticalOffset
+    )
+    {
+        if (player.PlayerPawn?.Value?.AbsOrigin == null)
+            return new Vector3(0, 0, 0);
+
+        var pawn = player.PlayerPawn.Value;
+        Vector3 pawnPos = (Vector3)pawn.AbsOrigin;
+
+        float yawRadians = pawn.V_angle.Y * (float)Math.PI / 180f;
+        var backwardDir = new Vector3(-MathF.Cos(yawRadians), -MathF.Sin(yawRadians), 0);
+        var eyePos = pawnPos + new Vector3(0, 0, verticalOffset);
+        var targetCamPos = eyePos + backwardDir * desiredDistance;
+
+        __camPos.X = targetCamPos.X;
+        __camPos.Y = targetCamPos.Y;
+        __camPos.Z = targetCamPos.Z;
+
+        Vector3 finalPos = targetCamPos;
+
+        var trace = TraceRay.GetGameTraceByEyePosition(
+            player,
+            __camPos,
+            (ulong)TraceMask.MaskShot
+        );
+
+        if (trace.DidHit())
+        {
+            Vector3 hitVec = trace.Position;
+            float distanceToWall = (hitVec - eyePos).Length();
+            float clampedDistance = Math.Clamp(distanceToWall - 10f, 10f, desiredDistance);
+            finalPos = eyePos + backwardDir * clampedDistance;
+        }
+
+        return finalPos;
     }
 
     public static Vector3 GetPosition(CDynamicProp prop)

@@ -78,6 +78,12 @@ public partial class PluginConfig : BasePluginConfig
     [JsonPropertyName("ForcePlayerVisibility")]
     public bool ForcePlayerVisibility { get; set; } = false;
 
+    [JsonPropertyName("CameraMoveable")]
+    public bool CameraMoveable { get; set; } = true;
+
+    [JsonPropertyName("CameraBlockObject")]
+    public bool CameraBlockObject { get; set; } = true;
+
     [JsonPropertyName("ConfigVersion")]
-    public override int Version { get; set; } = 4;
+    public override int Version { get; set; } = 5;
 }

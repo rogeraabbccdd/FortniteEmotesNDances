@@ -20,7 +20,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
     public override string ModuleName => "Fortnite Emotes & Dances";
     public override string ModuleDescription => "CS2 Port of Fortnite Emotes & Dances";
     public override string ModuleAuthor => "Cruze (https://github.com/cruze03)";
-    public override string ModuleVersion => "1.1.2";
+    public override string ModuleVersion => "1.1.3";
 
     public required PluginConfig Config { get; set; } = new();
 
@@ -540,9 +540,9 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
                     }
                 }
 
-                if (g_PlayerSettings[steamID].CameraProp != null)
+                if (g_PlayerSettings[steamID].CameraProp != null && Config.CameraMoveable)
                 {
-                    UpdateCamera(g_PlayerSettings[steamID].CameraProp!, player);
+                    UpdateCamera(g_PlayerSettings[steamID].CameraProp!, player, Config.CameraBlockObject);
                 }
 
                 if (!Config.EmoteFreezePlayer)

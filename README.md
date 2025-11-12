@@ -31,6 +31,7 @@ This plugin allows players to use Emotes & Dances just like Fortnite.
 ## Credits
 - [CSGO Fortnite Emotes](https://github.com/Franc1sco/Fortnite-Emotes-Extended)
 - [Thirdperson Plugin](https://github.com/UgurhanK/ThirdPerson-WIP)
+- [ThirdPerson-Revamped](https://github.com/KKNecmi/ThirdPerson-Revamped)
 - [HidePlayers Plugin](https://github.com/qstage/CS2-HidePlayers) (was used in older version of plugin)
 - K4ryuu for KitsuneMenu.
 - Kolka for porting model.
