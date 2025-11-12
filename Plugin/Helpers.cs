@@ -1131,7 +1131,7 @@ public partial class Plugin
         return File.Exists(vdfPath) && File.Exists(binaryPath);
     }
 
-    private readonly string[] _requiredShared = ["FortniteEmotesNDancesAPI", "KitsuneMenu"];
+    private readonly string[] _requiredShared = ["FortniteEmotesNDancesAPI", "KitsuneMenu", "CS2TraceRay"];
     private bool AreAllDependaciesInstalled(ref string error)
     {
         string vdfPath = Path.Combine(Server.GameDirectory, "csgo", "addons/metamod", "multiaddonmanager.vdf");
