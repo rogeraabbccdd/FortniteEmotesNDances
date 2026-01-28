@@ -168,7 +168,7 @@ public partial class Plugin
             StopEmote(target);
         }
 
-        CDynamicProp? prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
+        var prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
 
         if (prop == null || prop.Entity == null || prop.Entity.Handle == IntPtr.Zero || !prop.IsValid)
         {
@@ -180,8 +180,6 @@ public partial class Plugin
         prop.Entity.Name = propName;
 
         prop.CBodyComponent!.SceneNode!.Owner!.Entity!.Flags &= unchecked((uint)~(1 << 2));
-
-        prop.SetModel(emote.Model);
 
         SetCollision(prop, CollisionGroup.COLLISION_GROUP_NEVER, SolidType_t.SOLID_NONE, 12);
 
@@ -203,7 +201,14 @@ public partial class Plugin
 
         g_PlayerSettings[steamID].EmoteModelIndex = prop.Index;
 
-        prop.AcceptInput("SetAnimation", value: emote.AnimationName);
+        Server.NextWorldUpdate(() =>
+        {
+            if (prop == null || !prop.IsValid) return;
+
+            prop.SetModel(emote.Model);
+
+            prop.AcceptInput("SetAnimation", value: emote.AnimationName);
+        });
 
         if (!string.IsNullOrEmpty(emote.DefaultAnimationName))
         {
@@ -328,7 +333,7 @@ public partial class Plugin
             return null;
         }
 
-        CDynamicProp? clone = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
+        var clone = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
         if (clone == null || clone.Entity == null || clone.Entity.Handle == IntPtr.Zero || !clone.IsValid)
         {
             return null;
@@ -611,7 +616,7 @@ public partial class Plugin
         if (!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive() || player.AbsOrigin == null || player.PlayerPawn.Value!.CameraServices == null)
             return null;
 
-        CDynamicProp? prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
+        var prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
         if (prop == null)
             return null;
 
@@ -1156,17 +1161,21 @@ public partial class Plugin
 
 internal static class CBaseModelEntityEx
 {
+    internal static CSkeletonInstance? GetSkeletonInstance(this CBaseModelEntity entity)
+    {
+        return entity.CBodyComponent?.SceneNode?.As<CSkeletonInstance>();
+    }
     internal static string? GetModel(this CBaseModelEntity entity)
     {
-        return entity.CBodyComponent?.SceneNode?.As<CSkeletonInstance>().ModelState.ModelName;
+        return entity.GetSkeletonInstance()?.ModelState.ModelName;
     }
     internal static ulong? GetMeshGroup(this CBaseModelEntity entity)
     {
-        return entity.CBodyComponent?.SceneNode?.As<CSkeletonInstance>().ModelState.MeshGroupMask;
+        return entity.GetSkeletonInstance()?.ModelState.MeshGroupMask;
     }
     internal static void SetMeshGroup(this CBaseModelEntity entity, ulong mesh)
     {
-        var skeleton = entity.CBodyComponent?.SceneNode?.As<CSkeletonInstance>();
+        var skeleton = entity.GetSkeletonInstance();
 
         if (skeleton == null) return;
 
