@@ -318,8 +318,8 @@ public partial class Plugin
 
     private CDynamicProp? CreateClone(CCSPlayerController player, CDynamicProp prop, string propName)
     {
-        string model = player.PlayerPawn.Value?.CBodyComponent?.SceneNode?.GetSkeletonInstance().ModelState.ModelName ?? string.Empty;
-        ulong meshgroupmask = player.PlayerPawn.Value?.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.MeshGroupMask ?? 0;
+        string model = player.PlayerPawn.Value?.GetModel() ?? string.Empty;
+        ulong meshgroupmask = player.PlayerPawn.Value?.GetMeshGroup() ?? 0;
 
         DebugLogs("Model: " + model);
 
@@ -338,12 +338,10 @@ public partial class Plugin
         clone.CBodyComponent!.SceneNode!.Owner!.Entity!.Flags &= unchecked((uint)~(1 << 2));
 
         clone.SetModel(model);
-        if (meshgroupmask != 0 && clone.CBodyComponent != null && clone.CBodyComponent.SceneNode != null)
+        if (meshgroupmask != 0)
         {
-            clone.CBodyComponent.SceneNode.GetSkeletonInstance().ModelState.MeshGroupMask = meshgroupmask;
-            Utilities.SetStateChanged(clone, "CBaseEntity", "m_CBodyComponent");
+            clone.SetMeshGroup(meshgroupmask);
         }
-
 
         SetCollision(clone, CollisionGroup.COLLISION_GROUP_NEVER, SolidType_t.SOLID_NONE, 12);
         clone.DispatchSpawn();
@@ -970,18 +968,17 @@ public partial class Plugin
         if (playerPawnValue == null)
             return;
 
-        var model = playerPawnValue.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.ModelName ?? string.Empty;
+        var model = playerPawnValue.GetModel() ?? string.Empty;
 
         if (!string.IsNullOrEmpty(model))
         {
-            ulong meshgroupmask = playerPawnValue.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.MeshGroupMask ?? 0;
+            ulong meshgroupmask = playerPawnValue.GetMeshGroup() ?? 0;
             playerPawnValue.SetModel("characters/models/tm_jumpsuit/tm_jumpsuit_varianta.vmdl");
             playerPawnValue.SetModel(model);
 
-            if (meshgroupmask != 0 && playerPawnValue.CBodyComponent != null && playerPawnValue.CBodyComponent.SceneNode != null)
+            if (meshgroupmask != 0)
             {
-                playerPawnValue.CBodyComponent.SceneNode.GetSkeletonInstance().ModelState.MeshGroupMask = meshgroupmask;
-                Utilities.SetStateChanged(playerPawnValue, "CBaseEntity", "m_CBodyComponent");
+                playerPawnValue.SetMeshGroup(meshgroupmask);
             }
         }
 
@@ -1154,6 +1151,27 @@ public partial class Plugin
             }
         }
         return true;
+    }
+}
+
+internal static class CBaseModelEntityEx
+{
+    internal static string? GetModel(this CBaseModelEntity entity)
+    {
+        return entity.CBodyComponent?.SceneNode?.As<CSkeletonInstance>().ModelState.ModelName;
+    }
+    internal static ulong? GetMeshGroup(this CBaseModelEntity entity)
+    {
+        return entity.CBodyComponent?.SceneNode?.As<CSkeletonInstance>().ModelState.MeshGroupMask;
+    }
+    internal static void SetMeshGroup(this CBaseModelEntity entity, ulong mesh)
+    {
+        var skeleton = entity.CBodyComponent?.SceneNode?.As<CSkeletonInstance>();
+
+        if (skeleton == null) return;
+
+        skeleton.ModelState.MeshGroupMask = mesh;
+        Utilities.SetStateChanged(entity, "CBaseEntity", "m_CBodyComponent");
     }
 }
 

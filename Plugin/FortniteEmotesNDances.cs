@@ -14,13 +14,13 @@ using FortniteEmotes.API;
 
 namespace FortniteEmotes;
 
-[MinimumApiVersion(329)]
+[MinimumApiVersion(361)]
 public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
 {
     public override string ModuleName => "Fortnite Emotes & Dances";
     public override string ModuleDescription => "CS2 Port of Fortnite Emotes & Dances";
     public override string ModuleAuthor => "Cruze (https://github.com/cruze03)";
-    public override string ModuleVersion => "1.1.3";
+    public override string ModuleVersion => "1.1.4";
 
     public required PluginConfig Config { get; set; } = new();
 
@@ -345,7 +345,7 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         HookUserMessage(118, OnMessage, HookMode.Pre);
 
         if (Config.StopDamageWhenInEmote)
-            VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Hook(OnTakeDamage, HookMode.Pre);
+            RegisterListener<Listeners.OnEntityTakeDamagePre>(OnTakeDamage);
 
         Menu_OnLoad();
         API_OnLoad();
@@ -381,14 +381,12 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         UnhookUserMessage(118, OnMessage, HookMode.Pre);
 
         if (Config.StopDamageWhenInEmote)
-            VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Unhook(OnTakeDamage, HookMode.Pre);
+            RemoveListener<Listeners.OnEntityTakeDamagePre>(OnTakeDamage);
     }
 
-    private HookResult OnTakeDamage(DynamicHook h)
+    private HookResult OnTakeDamage(CBaseEntity victim, CTakeDamageInfo damageinfo)
     {
         if (g_GameRules == null) return HookResult.Continue;
-
-        var victim = h.GetParam<CEntityInstance>(0);
 
         if (victim == null || !victim.IsValid) return HookResult.Continue;
 
@@ -403,8 +401,6 @@ public partial class Plugin : BasePlugin, IPluginConfig<PluginConfig>
         if (victimController.IsBot || victimController.IsHLTV) return HookResult.Continue;
 
         var steamID = victimController.SteamID;
-
-        var damageinfo = h.GetParam<CTakeDamageInfo>(1);
 
         if (g_PlayerSettings.ContainsKey(steamID) && g_PlayerSettings[steamID].IsDancing && damageinfo.Damage > 0)
         {
