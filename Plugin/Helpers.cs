@@ -185,6 +185,10 @@ public partial class Plugin
 
         SetPropInvisible(prop);
 
+        string model = target.PlayerPawn.Value.GetModel() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(model))
+            prop.SetModel(model);
+
         prop.DispatchSpawn();
         prop.Teleport((Vector3)target.PlayerPawn.Value.AbsOrigin, (Vector3)target.PlayerPawn.Value.AbsRotation);
         prop.UseAnimGraph = false;
