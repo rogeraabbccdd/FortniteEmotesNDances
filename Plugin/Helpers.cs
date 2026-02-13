@@ -15,8 +15,7 @@ using System.Runtime.InteropServices;
 using FortniteEmotes.API;
 using System.Numerics;
 
-using CS2TraceRay.Class;
-using CS2TraceRay.Enum;
+using RayTraceAPI;
 
 namespace FortniteEmotes;
 
@@ -829,35 +828,41 @@ public partial class Plugin
         if (!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive())
             return;
 
-        var playerPawnValue = player.PlayerPawn.Value;
+        var weaponServices = player.PlayerPawn.Value!.WeaponServices;
+
+        if (weaponServices == null)
+            return;
 
         Dictionary<string, List<(int, int)>> weaponsWithAmmo = [];
+        Dictionary<int, ushort> itemsWithAmmo = [];
 
-        var myWeapons = playerPawnValue!.WeaponServices?.MyWeapons;
-        if (myWeapons != null)
+        var myWeapons = weaponServices.MyWeapons;
+        foreach (var gun in myWeapons)
         {
-            foreach (var gun in myWeapons)
+            var weapon = gun.Value;
+            if (weapon != null)
             {
-                var weapon = gun.Value;
-                if (weapon != null)
+                int clip1 = weapon.Clip1;
+                int reservedAmmo = weapon.ReserveAmmo[0];
+
+                var weaponName = GetWeaponClassname(weapon);
+
+                if (!weaponsWithAmmo.TryGetValue(weaponName, out var value))
                 {
-                    int clip1 = weapon.Clip1;
-                    int reservedAmmo = weapon.ReserveAmmo[0];
-
-                    var weaponName = GetWeaponClassname(weapon);
-
-                    if (!weaponsWithAmmo.TryGetValue(weaponName, out var value))
-                    {
-                        value = [];
-                        weaponsWithAmmo.Add(weaponName, value);
-                    }
-
-                    value.Add((clip1, reservedAmmo));
-                    weapon?.AddEntityIOEvent("Kill", weapon, null, "", 0.1f);
+                    value = [];
+                    weaponsWithAmmo.Add(weaponName, value);
                 }
+
+                value.Add((clip1, reservedAmmo));
+                weapon?.AddEntityIOEvent("Kill", weapon, null, "", 0.1f);
             }
-            playerWeapons[player.Slot] = weaponsWithAmmo;
         }
+        for (int i = 0; i < 32; i++)
+        {
+            itemsWithAmmo.Add(i, weaponServices.Ammo[i]);
+        }
+        playerWeapons[player.Slot] = weaponsWithAmmo;
+        playerItems[player.Slot] = itemsWithAmmo;
     }
 
     private void GivePlayerWeaponsBack(CCSPlayerController player)
@@ -865,9 +870,12 @@ public partial class Plugin
         if (!player.IsValidPlayer() || !player.PlayerPawn.IsValidPawnAlive())
             return;
 
-        var playerPawnValue = player.PlayerPawn.Value;
+        var weaponServices = player.PlayerPawn.Value!.WeaponServices;
 
-        if (playerWeapons.TryGetValue(player.Slot, out var weaponsWithAmmo))
+        if (weaponServices == null)
+            return;
+
+        if (playerWeapons.TryGetValue(player.Slot, out var weaponsWithAmmo) && playerItems.TryGetValue(player.Slot, out var itemsWithAmmo))
         {
             foreach (var weapon in weaponsWithAmmo)
             {
@@ -898,8 +906,14 @@ public partial class Plugin
                     }
                 }
             }
+
+            foreach (var item in itemsWithAmmo)
+            {
+                weaponServices.Ammo[item.Key] = item.Value;
+            }
         }
         playerWeapons.Remove(player.Slot);
+        playerItems.Remove(player.Slot);
     }
 
     private static void SetPlayerWeaponVisible(CCSPlayerController player)
@@ -1012,7 +1026,7 @@ public partial class Plugin
     {
         if (target.IsValidPlayer() && target.PlayerPawn.IsValidPawnAlive() && target.AbsOrigin != null)
         {
-            Vector3 positionBehind = blockcamera ? CalculateSafeCameraPosition(target, 110f, 75f) : CalculatePositionInFront(target, -110f, 75f);
+            Vector3 positionBehind = blockcamera && g_RayTraceApi != null ? CalculateSafeCameraPosition(target, 110f, 75f) : CalculatePositionInFront(target, -110f, 75f);
             Vector3 position = Lerp(GetPosition(cameraProp), positionBehind, blockcamera ? 0.3f : 0.1f);
             cameraProp.Teleport(position, (Vector3)target.PlayerPawn.Value!.V_angle);
         }
@@ -1076,21 +1090,34 @@ public partial class Plugin
 
         Vector3 finalPos = targetCamPos;
 
-        var trace = TraceRay.GetGameTraceByEyePosition(
-            player,
-            __camPos,
-            (ulong)TraceMask.MaskShot
-        );
+        g_RayTraceApi!.TraceEndShape(eyePos, targetCamPos, null, GetTraceOptions(), out var result);
 
-        if (trace.DidHit())
+        if (result.Fraction < 1)
         {
-            Vector3 hitVec = trace.Position;
+            var hitVec = result.EndPos;
             float distanceToWall = (hitVec - eyePos).Length();
             float clampedDistance = Math.Clamp(distanceToWall - 10f, 10f, desiredDistance);
             finalPos = eyePos + backwardDir * clampedDistance;
         }
 
         return finalPos;
+    }
+
+    // Taken from Source2-AntiWallHack by karola3vax
+    private static readonly InteractionLayers OcclusionTraceMask =
+        InteractionLayers.MASK_SHOT_PHYSICS |
+        InteractionLayers.BlockLOS |
+        InteractionLayers.WorldGeometry |
+        InteractionLayers.csgo_opaque;
+
+    private static TraceOptions GetTraceOptions()
+    {
+        return new TraceOptions(
+            0,
+            OcclusionTraceMask,
+            0,
+            false
+        );
     }
 
     public static Vector3 GetPosition(CDynamicProp prop)
@@ -1137,7 +1164,7 @@ public partial class Plugin
         return File.Exists(vdfPath) && File.Exists(binaryPath);
     }
 
-    private readonly string[] _requiredShared = ["FortniteEmotesNDancesAPI", "KitsuneMenu", "CS2TraceRay"];
+    private readonly string[] _requiredShared = ["FortniteEmotesNDancesAPI", "KitsuneMenu", "RayTraceApi"];
     private bool AreAllDependaciesInstalled(ref string error)
     {
         string vdfPath = Path.Combine(Server.GameDirectory, "csgo", "addons/metamod", "multiaddonmanager.vdf");
@@ -1146,6 +1173,15 @@ public partial class Plugin
         if (!File.Exists(vdfPath) || !File.Exists(binaryPath))
         {
             error = "MultiAddonManager is not installed.";
+            return false;
+        }
+
+        vdfPath = Path.Combine(Server.GameDirectory, "csgo", "addons/metamod", "RayTrace.vdf");
+        binaryPath = Path.Combine(Server.GameDirectory, "csgo", "addons/RayTrace/bin", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win64/RayTrace.dll" : "linuxsteamrt64/RayTrace.so");
+
+        if (!File.Exists(vdfPath) || !File.Exists(binaryPath))
+        {
+            error = "RayTrace-MM is not installed.";
             return false;
         }
 

@@ -41,7 +41,7 @@
     <ProjectReference Include="..\API\FortniteEmotesNDancesAPI.csproj">
       <Private>false</Private>
     </ProjectReference>
-    <ProjectReference Include="..\CS2TraceRay\CS2TraceRay.csproj" />
+    <ProjectReference Include="..\RayTraceApi\RayTraceApi.csproj" />
     <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

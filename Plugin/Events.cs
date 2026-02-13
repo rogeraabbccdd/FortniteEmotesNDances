@@ -11,6 +11,7 @@ public partial class Plugin
     {
         EmitSoundExtension.ClearSounds();
         playerWeapons.Clear();
+        playerItems.Clear();
         g_bRoundEnd = false;
         foreach (var player in g_PlayerSettings)
         {
