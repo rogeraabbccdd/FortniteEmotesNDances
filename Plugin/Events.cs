@@ -1,6 +1,7 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Modules.Cvars;
 
 namespace FortniteEmotes;
 
@@ -27,6 +28,23 @@ public partial class Plugin
     public HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo @info)
     {
         g_bRoundEnd = true;
+
+        var roundRestartDelay = ConVar.Find("mp_round_restart_delay")?.GetPrimitiveValue<float>() ?? 7.0f;
+        AddTimer(roundRestartDelay - 0.2f, () =>
+        {
+            foreach (var settings in g_PlayerSettings)
+            {
+                if (settings.Value.IsDancing)
+                {
+                    var player = Utilities.GetPlayerFromSteamId(settings.Key);
+
+                    if (player != null)
+                    {
+                        StopEmote(player);
+                    }
+                }
+            }
+        });
         return HookResult.Continue;
     }
 

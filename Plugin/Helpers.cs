@@ -1065,6 +1065,7 @@ public partial class Plugin
         return positionInFront;
     }
 
+    public static readonly Vector __eyePos = new();
     public static readonly Vector __camPos = new();
 
     public static Vector3 CalculateSafeCameraPosition(
@@ -1088,9 +1089,13 @@ public partial class Plugin
         __camPos.Y = targetCamPos.Y;
         __camPos.Z = targetCamPos.Z;
 
+        __eyePos.X = eyePos.X;
+        __eyePos.Y = eyePos.Y;
+        __eyePos.Z = eyePos.Z;
+
         Vector3 finalPos = targetCamPos;
 
-        g_RayTraceApi!.TraceEndShape(eyePos, targetCamPos, null, GetTraceOptions(), out var result);
+        g_RayTraceApi!.TraceEndShape(__eyePos, __camPos, null, GetTraceOptions(), out var result);
 
         if (result.Fraction < 1)
         {

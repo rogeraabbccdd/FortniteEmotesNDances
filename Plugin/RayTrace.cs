@@ -4,7 +4,7 @@ using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Memory;
 using RayTraceAPI;
 using System.Runtime.InteropServices;
-using System.Numerics;
+using Vector = CounterStrikeSharp.API.Modules.Utils.Vector;
 
 namespace FortniteEmotes;
 
@@ -52,7 +52,7 @@ public static class RayTraceBridge
 
 public class CRayTrace : CRayTraceInterface
 {
-    public unsafe bool TraceShape(Vector3 origin, Vector3 angles, CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result)
+    public unsafe bool TraceShape(Vector origin, QAngle angles, CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result)
     {
         result = default;
 
@@ -61,13 +61,10 @@ public class CRayTrace : CRayTraceInterface
 
         TraceResult resultBuffer = default;
         TraceOptions optionsBuffer = options;
-
-        var originPtr = &origin;
-        var anglesPtr = &angles;
 
         bool success = RayTraceBridge._traceShape!(RayTraceBridge.m_pRayTraceHandle,
-            (nint)originPtr,
-            (nint)anglesPtr,
+            origin.Handle,
+            angles.Handle,
             ignoreEntity?.Handle ?? nint.Zero,
             (nint)(&optionsBuffer),
             (nint)(&resultBuffer));
@@ -76,7 +73,7 @@ public class CRayTrace : CRayTraceInterface
         return success;
     }
 
-    public unsafe bool TraceEndShape(Vector3 origin, Vector3 endOrigin, CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result)
+    public unsafe bool TraceEndShape(Vector origin, Vector endOrigin, CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result)
     {
         result = default;
 
@@ -85,13 +82,10 @@ public class CRayTrace : CRayTraceInterface
 
         TraceResult resultBuffer = default;
         TraceOptions optionsBuffer = options;
-
-        var originPtr = &origin;
-        var endOriginPtr = &endOrigin;
 
         bool success = RayTraceBridge._traceEndShape!(RayTraceBridge.m_pRayTraceHandle,
-            (nint)originPtr,
-            (nint)endOriginPtr,
+            origin.Handle,
+            endOrigin.Handle,
             ignoreEntity?.Handle ?? nint.Zero,
             (nint)(&optionsBuffer),
             (nint)(&resultBuffer));
@@ -100,7 +94,7 @@ public class CRayTrace : CRayTraceInterface
         return success;
     }
 
-    public unsafe bool TraceHullShape(Vector3 vecStart, Vector3 vecEnd, Vector3 hullMins, Vector3 hullMaxs, CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result)
+    public unsafe bool TraceHullShape(Vector vecStart, Vector vecEnd, Vector hullMins, Vector hullMaxs, CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result)
     {
         result = default;
 
@@ -110,16 +104,11 @@ public class CRayTrace : CRayTraceInterface
         TraceResult resultBuffer = default;
         TraceOptions optionsBuffer = options;
 
-        var vecStartPtr = &vecStart;
-        var vecEndPtr = &vecEnd;
-        var hullMinsPtr = &hullMins;
-        var hullMaxsPtr = &hullMaxs;
-
         bool success = RayTraceBridge._traceHullShape!(RayTraceBridge.m_pRayTraceHandle,
-            (nint)vecStartPtr,
-            (nint)vecEndPtr,
-            (nint)hullMinsPtr,
-            (nint)hullMaxsPtr,
+            vecStart.Handle,
+            vecEnd.Handle,
+            hullMins.Handle,
+            hullMaxs.Handle,
             ignoreEntity?.Handle ?? nint.Zero,
             (nint)(&optionsBuffer),
             (nint)(&resultBuffer));
