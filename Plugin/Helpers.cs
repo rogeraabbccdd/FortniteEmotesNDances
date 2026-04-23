@@ -1118,7 +1118,6 @@ public partial class Plugin
     private static TraceOptions GetTraceOptions()
     {
         return new TraceOptions(
-            0,
             OcclusionTraceMask,
             0,
             false

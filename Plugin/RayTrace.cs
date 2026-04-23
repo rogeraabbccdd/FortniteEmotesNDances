@@ -10,25 +10,23 @@ namespace FortniteEmotes;
 
 public static class RayTraceBridge
 {
-    public static nint m_pRayTraceHandle = nint.Zero;
-    public static bool m_bRayTraceLoaded = false;
+    public static nint Handle;
+    public static bool Loaded;
 
-    public static Func<nint, nint, nint, nint, nint, nint, bool>? _traceShape;
-    public static Func<nint, nint, nint, nint, nint, nint, bool>? _traceEndShape;
-    public static Func<nint, nint, nint, nint, nint, nint, nint, nint, bool>? _traceHullShape;
-    public static Func<nint, nint, nint, nint, nint, nint, bool>? _traceShapeEx;
+    public static unsafe Func<nint, nint, nint, nint, nint, nint, bool>? TraceShape;
+    public static unsafe Func<nint, nint, nint, nint, nint, nint, bool>? TraceEndShape;
+    public static unsafe Func<nint, nint, nint, nint, nint, nint, nint, nint, bool>? TraceHullShape;
+    public static unsafe Func<nint, nint, nint, nint, nint, nint, bool>? TraceShapeEx;
 
     public static bool Initialize()
     {
-        m_pRayTraceHandle = (nint)Utilities.MetaFactory("CRayTraceInterface002")!;
+        Handle = (nint)Utilities.MetaFactory("CRayTraceInterface002")!;
 
-        if (m_pRayTraceHandle == nint.Zero)
-        {
+        if (Handle == 0)
             return false;
-        }
 
         Bind();
-        m_bRayTraceLoaded = true;
+        Loaded = true;
         return true;
     }
 
@@ -51,97 +49,109 @@ public static class RayTraceBridge
             ex = 5;
         }
 
-        _traceShape = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, bool>(m_pRayTraceHandle, shape);
-        _traceEndShape = VirtualFunction.Create<nint, IntPtr, IntPtr, nint, nint, nint, bool>(m_pRayTraceHandle, end);
-        _traceHullShape = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, nint, nint, bool>(m_pRayTraceHandle, hull);
-        _traceShapeEx = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, bool>(m_pRayTraceHandle, ex);
+        TraceShape = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, bool>(Handle, shape);
+        TraceEndShape = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, bool>(Handle, end);
+        TraceHullShape = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, nint, nint, bool>(Handle, hull);
+        TraceShapeEx = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, bool>(Handle, ex);
     }
 }
 
 public class CRayTrace : CRayTraceInterface
 {
-    public unsafe bool TraceShape(Vector origin, QAngle angles, CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result)
+    public bool TraceShape(Vector start, QAngle angles, CEntityInstance? ignore, TraceOptions options, out TraceResult result)
     {
-        result = default;
+        unsafe
+        {
+            result = default;
 
-        if (!RayTraceBridge.m_bRayTraceLoaded || RayTraceBridge.m_pRayTraceHandle == nint.Zero)
-            return false;
+            if (!RayTraceBridge.Loaded)
+                return false;
 
-        TraceResult resultBuffer = default;
-        TraceOptions optionsBuffer = options;
+            TraceResult resultBuffer = default;
+            TraceOptions optionsBuffer = options;
 
-        bool success = RayTraceBridge._traceShape!(RayTraceBridge.m_pRayTraceHandle,
-            origin.Handle,
-            angles.Handle,
-            ignoreEntity?.Handle ?? nint.Zero,
-            (nint)(&optionsBuffer),
-            (nint)(&resultBuffer));
+            bool success = RayTraceBridge.TraceShape!(RayTraceBridge.Handle,
+                start.Handle,
+                angles.Handle,
+                ignore?.Handle ?? nint.Zero,
+                (nint)(&optionsBuffer),
+                (nint)(&resultBuffer));
 
-        result = resultBuffer;
-        return success;
+            result = resultBuffer;
+            return success;
+        }
     }
 
-    public unsafe bool TraceEndShape(Vector origin, Vector endOrigin, CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result)
+    public bool TraceEndShape(Vector start, Vector end, CEntityInstance? ignore, TraceOptions options, out TraceResult result)
     {
-        result = default;
+        unsafe
+        {
+            result = default;
 
-        if (!RayTraceBridge.m_bRayTraceLoaded || RayTraceBridge.m_pRayTraceHandle == nint.Zero)
-            return false;
+            if (!RayTraceBridge.Loaded)
+                return false;
 
-        TraceResult resultBuffer = default;
-        TraceOptions optionsBuffer = options;
+            TraceResult resultBuffer = default;
+            TraceOptions optionsBuffer = options;
 
-        bool success = RayTraceBridge._traceEndShape!(RayTraceBridge.m_pRayTraceHandle,
-            origin.Handle,
-            endOrigin.Handle,
-            ignoreEntity?.Handle ?? nint.Zero,
-            (nint)(&optionsBuffer),
-            (nint)(&resultBuffer));
+            bool success = RayTraceBridge.TraceEndShape!(RayTraceBridge.Handle,
+                start.Handle,
+                end.Handle,
+                ignore?.Handle ?? nint.Zero,
+                (nint)(&optionsBuffer),
+                (nint)(&resultBuffer));
 
-        result = resultBuffer;
-        return success;
+            result = resultBuffer;
+            return success;
+        }
     }
 
-    public unsafe bool TraceHullShape(Vector vecStart, Vector vecEnd, Vector hullMins, Vector hullMaxs, CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result)
+    public bool TraceHullShape(Vector start, Vector end, Vector mins, Vector maxs, CEntityInstance? ignore, TraceOptions options, out TraceResult result)
     {
-        result = default;
+        unsafe
+        {
+            result = default;
 
-        if (!RayTraceBridge.m_bRayTraceLoaded || RayTraceBridge.m_pRayTraceHandle == nint.Zero)
-            return false;
+            if (!RayTraceBridge.Loaded)
+                return false;
 
-        TraceResult resultBuffer = default;
-        TraceOptions optionsBuffer = options;
+            TraceResult resultBuffer = default;
+            TraceOptions optionsBuffer = options;
 
-        bool success = RayTraceBridge._traceHullShape!(RayTraceBridge.m_pRayTraceHandle,
-            vecStart.Handle,
-            vecEnd.Handle,
-            hullMins.Handle,
-            hullMaxs.Handle,
-            ignoreEntity?.Handle ?? nint.Zero,
-            (nint)(&optionsBuffer),
-            (nint)(&resultBuffer));
+            bool success = RayTraceBridge.TraceHullShape!(RayTraceBridge.Handle,
+                start.Handle,
+                end.Handle,
+                mins.Handle,
+                maxs.Handle,
+                ignore?.Handle ?? nint.Zero,
+                (nint)(&optionsBuffer),
+                (nint)(&resultBuffer));
 
-        result = resultBuffer;
-        return success;
+            result = resultBuffer;
+            return success;
+        }
     }
 
-    public unsafe bool TraceShapeEx(Vector start, Vector end, nint filter, nint ray, out TraceResult result)
+    public bool TraceShapeEx(Vector start, Vector end, nint filter, nint ray, out TraceResult result)
     {
-        result = default;
+        unsafe
+        {
+            result = default;
 
-        if (!RayTraceBridge.m_bRayTraceLoaded)
-            return false;
+            if (!RayTraceBridge.Loaded)
+                return false;
 
-        TraceResult resultBuffer = default;
+            TraceResult resultBuffer = default;
 
-        bool success = RayTraceBridge._traceShapeEx!(RayTraceBridge.m_pRayTraceHandle,
-            start.Handle,
-            end.Handle,
-            filter,
-            ray,
-            (nint)(&resultBuffer));
+            bool success = RayTraceBridge.TraceShapeEx!(RayTraceBridge.Handle,
+                start.Handle,
+                end.Handle,
+                filter,
+                ray,
+                (nint)(&resultBuffer));
 
-        result = resultBuffer;
-        return success;
+            result = resultBuffer;
+            return success;
+        }
     }
 }
