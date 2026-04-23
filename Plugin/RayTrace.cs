@@ -16,10 +16,11 @@ public static class RayTraceBridge
     public static Func<nint, nint, nint, nint, nint, nint, bool>? _traceShape;
     public static Func<nint, nint, nint, nint, nint, nint, bool>? _traceEndShape;
     public static Func<nint, nint, nint, nint, nint, nint, nint, nint, bool>? _traceHullShape;
+    public static Func<nint, nint, nint, nint, nint, nint, bool>? _traceShapeEx;
 
     public static bool Initialize()
     {
-        m_pRayTraceHandle = (nint)Utilities.MetaFactory("CRayTraceInterface001")!;
+        m_pRayTraceHandle = (nint)Utilities.MetaFactory("CRayTraceInterface002")!;
 
         if (m_pRayTraceHandle == nint.Zero)
         {
@@ -33,20 +34,27 @@ public static class RayTraceBridge
 
     private static void Bind()
     {
-        int traceShapeIndex = 2;
-        int traceEndShapeIndex = 3;
-        int traceHullShapeIndex = 4;
+        int shape, end, hull, ex;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            traceShapeIndex = 1;
-            traceEndShapeIndex = 2;
-            traceHullShapeIndex = 3;
+            shape = 1;
+            end = 2;
+            hull = 3;
+            ex = 4;
+        }
+        else
+        {
+            shape = 2;
+            end = 3;
+            hull = 4;
+            ex = 5;
         }
 
-        _traceShape = VirtualFunction.Create<nint, IntPtr, IntPtr, nint, nint, nint, bool>(m_pRayTraceHandle, traceShapeIndex);
-        _traceEndShape = VirtualFunction.Create<nint, IntPtr, IntPtr, nint, nint, nint, bool>(m_pRayTraceHandle, traceEndShapeIndex);
-        _traceHullShape = VirtualFunction.Create<nint, IntPtr, IntPtr, IntPtr, IntPtr, nint, nint, nint, bool>(m_pRayTraceHandle, traceHullShapeIndex);
+        _traceShape = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, bool>(m_pRayTraceHandle, shape);
+        _traceEndShape = VirtualFunction.Create<nint, IntPtr, IntPtr, nint, nint, nint, bool>(m_pRayTraceHandle, end);
+        _traceHullShape = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, nint, nint, bool>(m_pRayTraceHandle, hull);
+        _traceShapeEx = VirtualFunction.Create<nint, nint, nint, nint, nint, nint, bool>(m_pRayTraceHandle, ex);
     }
 }
 
@@ -111,6 +119,26 @@ public class CRayTrace : CRayTraceInterface
             hullMaxs.Handle,
             ignoreEntity?.Handle ?? nint.Zero,
             (nint)(&optionsBuffer),
+            (nint)(&resultBuffer));
+
+        result = resultBuffer;
+        return success;
+    }
+
+    public unsafe bool TraceShapeEx(Vector start, Vector end, nint filter, nint ray, out TraceResult result)
+    {
+        result = default;
+
+        if (!RayTraceBridge.m_bRayTraceLoaded)
+            return false;
+
+        TraceResult resultBuffer = default;
+
+        bool success = RayTraceBridge._traceShapeEx!(RayTraceBridge.m_pRayTraceHandle,
+            start.Handle,
+            end.Handle,
+            filter,
+            ray,
             (nint)(&resultBuffer));
 
         result = resultBuffer;

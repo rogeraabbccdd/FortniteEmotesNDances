@@ -370,13 +370,13 @@ namespace RayTraceAPI
 
     public interface CRayTraceInterface
     {
-        public unsafe bool TraceShape(Vector origin, QAngle angles, CBaseEntity? ignoreEntity, TraceOptions options,
+        public bool TraceShape(Vector origin, QAngle angles, CBaseEntity? ignoreEntity, TraceOptions options,
             out TraceResult result);
 
-        public unsafe bool TraceEndShape(Vector origin, Vector endOrigin, CBaseEntity? ignoreEntity,
+        public bool TraceEndShape(Vector origin, Vector endOrigin, CBaseEntity? ignoreEntity,
             TraceOptions options, out TraceResult result);
 
-        public unsafe bool TraceHullShape(Vector vecStart, Vector vecEnd, Vector hullMins, Vector hullMaxs,
+        public bool TraceHullShape(Vector vecStart, Vector vecEnd, Vector hullMins, Vector hullMaxs,
             CBaseEntity? ignoreEntity, TraceOptions options, out TraceResult result);
     }
 }

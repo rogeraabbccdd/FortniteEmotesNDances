@@ -182,6 +182,8 @@ public partial class Plugin
 
         SetCollision(prop, CollisionGroup.COLLISION_GROUP_NEVER, SolidType_t.SOLID_NONE, 12);
 
+        RefreshPlayerGloves(target);
+
         SetPropInvisible(prop);
 
         string model = target.PlayerPawn.Value.GetModel() ?? string.Empty;
@@ -199,8 +201,6 @@ public partial class Plugin
         // SetPlayerWeaponInvisible(target);
 
         ClearPlayerWeapons(target);
-
-        RefreshPlayerGloves(target);
 
         g_PlayerSettings[steamID].EmoteModelIndex = prop.Index;
 
@@ -639,7 +639,7 @@ public partial class Plugin
 
         Server.NextWorldUpdate(() =>
         {
-            if (prop.IsValid && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
+            if (prop.IsValid && player.IsValid && player.Connected == PlayerConnectedState.Connected)
             {
                 var steamID = player.SteamID;
                 if (!g_PlayerSettings.ContainsKey(steamID))
@@ -671,7 +671,7 @@ public partial class Plugin
 
         Server.NextWorldUpdate(() =>
         {
-            if (player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
+            if (player.IsValid && player.Connected == PlayerConnectedState.Connected)
             {
                 player.PlayerPawn.Value.CameraServices.ViewEntity.Raw = uint.MaxValue;
 
@@ -723,6 +723,14 @@ public partial class Plugin
             return;
         }
 
+        var enteffects = entity.Effects;
+
+        enteffects |= 16; // This is EF_NOSHADOW
+
+        entity.Effects = enteffects;
+        Utilities.SetStateChanged(entity, "CBaseEntity", "m_fEffects");
+
+        // Model shadow started to appear after ag2 22/04/26 update
         entity.Render = Color.FromArgb(0, 255, 255, 255);
         Utilities.SetStateChanged(entity, "CBaseModelEntity", "m_clrRender");
     }
@@ -991,30 +999,20 @@ public partial class Plugin
         if (playerPawnValue == null)
             return;
 
-        var model = playerPawnValue.GetModel() ?? string.Empty;
+        CEconItemView item = playerPawnValue.EconGloves;
+        item.NetworkedDynamicAttributes.Attributes.RemoveAll();
+        item.AttributeList.Attributes.RemoveAll();
 
-        if (!string.IsNullOrEmpty(model))
+        SetBodygroup(playerPawnValue, "first_or_third_person", 0);
+
+        if (update) return;
+
+        AddTimer(0.2f, () =>
         {
-            ulong meshgroupmask = playerPawnValue.GetMeshGroup() ?? 0;
-            playerPawnValue.SetModel("characters/models/tm_jumpsuit/tm_jumpsuit_varianta.vmdl");
-            playerPawnValue.SetModel(model);
+            // TODO: Re-give gloves
 
-            if (meshgroupmask != 0)
-            {
-                playerPawnValue.SetMeshGroup(meshgroupmask);
-            }
-        }
-
-        if (update)
-        {
-            Server.NextWorldUpdate(() =>
-            {
-                if (playerPawnValue == null)
-                    return;
-
-                SetBodygroup(playerPawnValue, "default_gloves", 2);
-            });
-        }
+            SetBodygroup(playerPawnValue, "first_or_third_person", 1);
+        });
     }
 
     private void SetBodygroup(CCSPlayerPawn pawn, string group, int value)
@@ -1097,7 +1095,9 @@ public partial class Plugin
 
         g_RayTraceApi!.TraceEndShape(__eyePos, __camPos, null, GetTraceOptions(), out var result);
 
-        if (result.Fraction < 1)
+        // Server.PrintToChatAll($"RayTrace: Fraction: {result.Fraction} | DidHit: {result.DidHit}");
+
+        if (result.DidHit)
         {
             var hitVec = result.EndPos;
             float distanceToWall = (hitVec - eyePos).Length();
@@ -1237,7 +1237,7 @@ internal static class CCSPlayerControllerEx
         && controller.Entity != null
         && controller.Entity.Handle != IntPtr.Zero
         && controller.IsValid
-        && controller.Connected == PlayerConnectedState.PlayerConnected
+        && controller.Connected == PlayerConnectedState.Connected
         && !controller.IsHLTV
         && !controller.IsBot;
     }
